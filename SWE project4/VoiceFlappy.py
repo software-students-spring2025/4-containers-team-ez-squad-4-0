@@ -8,6 +8,7 @@ import joblib
 # === Load model ===
 model = joblib.load("sound_model.pkl")
 label_encoder = joblib.load("label_encoder.pkl")
+scaler = joblib.load("scaler.pkl")
 
 # === Mic + prediction queue ===
 SAMPLE_RATE = 16000
@@ -21,7 +22,7 @@ def audio_callback(indata, frames, time, status):
 
 # === Feature extractor ===
 def extract_features_from_chunk(chunk):
-    y = chunk.flatten()
+    y = librosa.util.normalize(chunk.flatten())
     if len(y) < SAMPLES:
         y = np.pad(y, (0, SAMPLES - len(y)))
     else:
@@ -43,6 +44,7 @@ obstacle_width = 80
 gap_height = 200
 obstacle_speed = 4
 frame_counter = 0
+last_trigger_frame = -60
 
 velocity_y = 0
 gravity = 0.5
@@ -73,19 +75,42 @@ while running:
     # === Voice prediction every 0.5 sec ===
     if frame_counter % 30 == 0 and not q.empty():
         chunk = q.get()
+        print(" Volume:", np.linalg.norm(chunk))
         features = extract_features_from_chunk(chunk).reshape(1, -1)
-        prediction = model.predict(features)[0]
-        label = label_encoder.inverse_transform([prediction])[0]
-        print(f"Predicted: {label}")
+        features = scaler.transform(features)
+        proba = model.predict_proba(features)[0]
 
-        if label == "up":
-            velocity_y = jump_strength
-        elif label == "down":
-            velocity_y += fall_strength
-        elif label == "stop":
-            moving = False
-        elif label == "go":
-            moving = True
+        # Print all class probabilities
+        for i, label in enumerate(label_encoder.classes_):
+            print(f"{label}: {proba[i]:.2f}", end=' | ')
+        print()
+
+        # Manually check if any real command exceeds threshold
+        threshold = 0.22
+        commands = ["up", "down", "go", "stop"]
+        triggered = False
+
+        if frame_counter - last_trigger_frame > 30:
+            for cmd in commands:
+                idx = list(label_encoder.classes_).index(cmd)
+                if proba[idx] > threshold:
+                    print(f"🗣️ Triggered: {cmd} ({proba[idx]:.2f})")
+                    label = cmd
+                    triggered = True
+                    last_trigger_frame = frame_counter
+                    break
+
+            if not triggered:
+                print("🕳️ No strong enough command detected.")
+            else:
+                if label == "up":
+                    velocity_y = jump_strength
+                elif label == "down":
+                    velocity_y += fall_strength
+                elif label == "stop":
+                    moving = False
+                elif label == "go":
+                    moving = True
 
     # === Update player ===
     velocity_y += gravity
