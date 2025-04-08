@@ -46,7 +46,7 @@ def load_dataset():
                 file_path = os.path.join(label_dir, filename)
                 features = extract_log_mel(file_path)
                 if features is not None:
-                    X.append(features[np.newaxis, :, :])  # shape: (1, 128, 44)
+                    X.append(features[..., np.newaxis])  # shape: (128, 44, 1)
                     y.append(label)
     print("✅ Dataset loaded:", Counter(y))
     return np.array(X), np.array(y)
