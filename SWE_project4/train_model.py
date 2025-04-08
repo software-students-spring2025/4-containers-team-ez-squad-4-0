@@ -1,15 +1,15 @@
-# === train_cnn_model.py (using log-Mel Spectrogram) ===
+# === train_cnn_model.py (using log-Mel Spectrogram, channels_last) ===
 import numpy as np
 import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
 from tensorflow.keras.utils import to_categorical
 from extract_features import load_dataset
 
 # === Load dataset ===
-X, y = load_dataset()
+X, y = load_dataset()  # X shape should be (N, 128, 44, 1)
 print("\n✅ Dataset loaded with shape:", X.shape)
 
 # === Encode labels ===
@@ -22,10 +22,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y_cat, test_size=0.2, ran
 
 # === Build CNN model ===
 model = Sequential([
-    Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(1, 128, 44), data_format='channels_first'),
-    MaxPooling2D(pool_size=(2, 2), data_format='channels_first'),
-    Conv2D(64, kernel_size=(3, 3), activation='relu', data_format='channels_first'),
-    MaxPooling2D(pool_size=(2, 2), data_format='channels_first'),
+    Input(shape=(128, 44, 1)),  # channels_last
+    Conv2D(32, kernel_size=(3, 3), activation='relu'),
+    MaxPooling2D(pool_size=(2, 2)),
+    Conv2D(64, kernel_size=(3, 3), activation='relu'),
+    MaxPooling2D(pool_size=(2, 2)),
     Flatten(),
     Dense(128, activation='relu'),
     Dense(y_cat.shape[1], activation='softmax')
