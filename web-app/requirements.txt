@@ -1,0 +1,9 @@
+Flask
+flask-socketio
+keras
+tensorflow
+librosa
+numpy
+pydub
+scikit-learn
+eventlet

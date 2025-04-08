@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Flappy Game</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/recorder-js@1.0.3/src/recorder.js"></script>
+
+  <style>
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: #ccc;
+    }
+    #subtitle {
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #debugLog {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      max-width: 300px;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center">🎮 Voice Flappy Game</h1>
+  <div style="text-align:center">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="subtitle"></div>
+    <p>🖋 Speak: <strong>go</strong>, <strong>stop</strong>, <strong>up</strong>, <strong>down</strong></p>
+  </div>
+
+  <div id="debugLog">Loading...</div>
+
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <!-- Game Logic -->
+  <script src="/static/game.js"></script>
+</body>
+</html>
