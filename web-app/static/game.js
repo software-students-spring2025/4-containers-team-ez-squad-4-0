@@ -1,4 +1,4 @@
-// === Invincible Flappy Game (Voice Controlled with Custom CNN Model) ===
+// === Voice Flappy Game (Minimal, Modern Soft UI with Score Save) ===
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 canvas.width = 800;
@@ -18,82 +18,47 @@ let mediaRecorder;
 let audioChunks = [];
 let recordingInterval;
 let statusElement;
-let commandLog;
 
-const pipeGap = 220;
-const pipeWidth = 30;
-let pipeInterval = 150;
+const pipeGap = 180;
+const pipeWidth = 50;
+let pipeInterval = 100;
 let frameCount = 0;
 
-// === Socket.io connection ===
 const socket = io();
 
-// Initialize status display
 function initializeUI() {
-  // Create status element if it doesn't exist
   if (!statusElement) {
-    statusElement = document.createElement('div');
-    statusElement.style.position = 'absolute';
-    statusElement.style.bottom = '10px';
-    statusElement.style.left = '10px';
-    statusElement.style.color = 'white';
-    statusElement.style.background = 'rgba(0,0,0,0.5)';
-    statusElement.style.padding = '5px 10px';
-    statusElement.style.borderRadius = '5px';
+    statusElement = document.createElement("div");
+    statusElement.style.position = "absolute";
+    statusElement.style.bottom = "20px";
+    statusElement.style.left = "50%";
+    statusElement.style.transform = "translateX(-50%)";
+    statusElement.style.color = "#444";
+    statusElement.style.background = "rgba(255,255,255,0.7)";
+    statusElement.style.padding = "10px 18px";
+    statusElement.style.borderRadius = "16px";
+    statusElement.style.fontWeight = "600";
+    statusElement.style.fontFamily = "'Segoe UI', sans-serif";
+    statusElement.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
     document.body.appendChild(statusElement);
   }
-  
-  // Create command log if it doesn't exist
-  if (!commandLog) {
-    commandLog = document.createElement('div');
-    commandLog.style.position = 'absolute';
-    commandLog.style.top = '60px';
-    commandLog.style.right = '10px';
-    commandLog.style.color = 'white';
-    commandLog.style.background = 'rgba(0,0,0,0.5)';
-    commandLog.style.padding = '5px 10px';
-    commandLog.style.borderRadius = '5px';
-    commandLog.style.maxHeight = '200px';
-    commandLog.style.overflow = 'auto';
-    document.body.appendChild(commandLog);
-  }
 }
 
-// Update status
 function updateStatus(text) {
-  if (statusElement) {
-    statusElement.textContent = text;
-  }
+  if (statusElement) statusElement.textContent = text;
 }
 
-// Log command
-function logCommand(command) {
-  if (commandLog) {
-    const entry = document.createElement('div');
-    entry.textContent = `${new Date().toLocaleTimeString()}: ${command}`;
-    commandLog.prepend(entry);
-    
-    // Keep only last 10 commands
-    while (commandLog.children.length > 10) {
-      commandLog.removeChild(commandLog.lastChild);
-    }
-  }
-}
-
-// === Draw text ===
-function drawText(text, x, y, color = "white", size = 24) {
+function drawText(text, x, y, color = "#333", size = 22) {
   ctx.fillStyle = color;
-  ctx.font = `${size}px Arial`;
+  ctx.font = `${size}px 'Segoe UI', sans-serif`;
   ctx.fillText(text, x, y);
 }
 
-// === Generate pipes ===
 function createPipe() {
   let topHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 60)) + 20;
   pipes.push({ x: canvas.width, top: topHeight, passed: false });
 }
 
-// === Game reset ===
 function resetGame() {
   player.y = 150;
   player.vy = 0;
@@ -103,87 +68,92 @@ function resetGame() {
   gameOver = false;
 }
 
-// === Update game state ===
+function checkCollision(pipe) {
+  const inPipe = player.x + player.width > pipe.x && player.x < pipe.x + pipeWidth;
+  const hitPipe = player.y < pipe.top || player.y + player.height > pipe.top + pipeGap;
+  return inPipe && hitPipe;
+}
+
+function sendScoreToServer(score) {
+  fetch("/score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ score })
+  }).then(res => {
+    if (res.ok) {
+      console.log("✅ Score submitted:", score);
+    } else {
+      console.error("❌ Failed to submit score.");
+    }
+  });
+}
+
 function update() {
   if (moving) {
     player.vy += gravity;
     player.y += player.vy;
-
-    // Keep player in bounds (top)
     if (player.y < 0) {
       player.y = 0;
       player.vy = 0;
     }
   }
-
-  // Create pipes
   if (frameCount % pipeInterval === 0) createPipe();
-
-  // Move pipes
   pipes.forEach(pipe => pipe.x -= 3);
-
-  // Remove off-screen pipes
   pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
-
-  // Score logic
   pipes.forEach(pipe => {
     if (pipe.x + pipeWidth < player.x && !pipe.passed) {
       pipe.passed = true;
       score++;
     }
+    if (!gameOver && checkCollision(pipe)) {
+      gameOver = true;
+      moving = false;
+      sendScoreToServer(score);
+    }
   });
-
-  // Game over logic (fall below screen)
-  if (player.y > canvas.height) {
+  if (!gameOver && player.y > canvas.height) {
     gameOver = true;
     moving = false;
+    sendScoreToServer(score);
   }
-
   frameCount++;
 }
 
-// === Render everything ===
 function render() {
-  ctx.fillStyle = "#aaa";
+  ctx.fillStyle = "#f0f4f8";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw player
-  ctx.fillStyle = "blue";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillStyle = "#3b82f6";
+  ctx.beginPath();
+  ctx.roundRect(player.x, player.y, player.width, player.height, 6);
+  ctx.fill();
 
-  // Draw pipes
-  ctx.fillStyle = "green";
+  ctx.fillStyle = "#10b981";
   pipes.forEach(pipe => {
     ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
     ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
   });
 
-  // Draw score
   drawText(`Score: ${score}`, 10, 30);
-  
-  // Draw recording status
-  drawText(`🎤 ${isRecording ? "Recording..." : "Mic inactive"}`, 10, canvas.height - 20, isRecording ? "lime" : "red");
+  drawText(`🎤 ${isRecording ? "Listening..." : "Mic off"}`, 10, canvas.height - 20, isRecording ? "#16a34a" : "#888");
 
-  // Game over overlay
   if (gameOver) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawText("Game Over! Say 'go' to restart", canvas.width / 2 - 160, canvas.height / 2);
+    drawText("Game Over", canvas.width / 2 - 80, canvas.height / 2 - 10, "#fff", 28);
+    drawText("Say 'go' to restart", canvas.width / 2 - 100, canvas.height / 2 + 24, "#fff", 20);
   }
 }
 
-// === Main loop ===
 function loop() {
   update();
   render();
   requestAnimationFrame(loop);
 }
 
-// === Handle command from server (based on CNN model) ===
 socket.on("command", function(command) {
   console.log("🎮 Received command:", command);
-  logCommand(command);
-  
+
   if (command === "up") {
     player.vy = jump;
     moving = true;
@@ -198,94 +168,64 @@ socket.on("command", function(command) {
   }
 });
 
-// === Audio recording functions ===
 async function initAudio() {
   try {
-    // Request audio permission with specific constraints for better performance
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
-        noiseSuppression: true, 
+        noiseSuppression: true,
         autoGainControl: true,
-        sampleRate: 44100  // Match your Flask app's DEVICE_RATE
+        sampleRate: 44100
       }
     });
     updateStatus("🎤 Microphone active");
-    
-    // Display available audio devices
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioInputs = devices.filter(device => device.kind === 'audioinput');
-    console.log("📱 Available audio input devices:", audioInputs);
-    
-    if (audioInputs.length > 0) {
-      console.log(`🎙️ Using: ${audioInputs[0].label}`);
-    }
-    
-    // Create AudioContext
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({
-      sampleRate: 44100  // Match your Flask app's DEVICE_RATE
-    });
-    
-    // Setup MediaRecorder with lower latency options
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
     mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=opus',  // More efficient codec
-      audioBitsPerSecond: 16000            // Reduced quality for speed
+      mimeType: 'audio/webm;codecs=opus',
+      audioBitsPerSecond: 16000
     });
-    
+
     mediaRecorder.ondataavailable = event => {
-      if (event.data.size > 0) {
-        audioChunks.push(event.data);
-      }
+      if (event.data.size > 0) audioChunks.push(event.data);
     };
-    
+
     mediaRecorder.onstop = () => {
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
       audioChunks = [];
-      
-      // Convert to base64 and send to server
       const reader = new FileReader();
       reader.onloadend = () => {
         socket.emit("audio", reader.result);
-        // Immediately start another recording cycle
-        startRecording();
+        setTimeout(startRecording, 800);
       };
       reader.readAsDataURL(audioBlob);
     };
-    
-    // Start initial recording
+
     startRecording();
-    
   } catch (err) {
     console.error("🔴 Error accessing microphone:", err);
     updateStatus("❌ Microphone access denied");
   }
 }
 
-// Start a single recording cycle
 function startRecording() {
   if (mediaRecorder && mediaRecorder.state === 'inactive') {
     isRecording = true;
     audioChunks = [];
     mediaRecorder.start();
-    
-    // Record for only 500ms (shorter duration)
     setTimeout(() => {
       if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         isRecording = false;
       }
-    }, 500);  // Half second recording for faster response
+    }, 800);
   }
 }
 
-// Clear the old interval-based method
-if (recordingInterval) {
-  clearInterval(recordingInterval);
-  recordingInterval = null;
-}
+if (recordingInterval) clearInterval(recordingInterval);
+recordingInterval = null;
 
-// === Initialize game ===
-window.onload = function() {
+window.onload = function () {
   initializeUI();
   updateStatus("🎮 Game loaded, initializing audio...");
   initAudio();

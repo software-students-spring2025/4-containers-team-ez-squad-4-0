@@ -1,9 +1,9 @@
-Flask
+flask
 flask-socketio
-keras
 tensorflow
 librosa
-numpy
 pydub
-scikit-learn
+joblib
+pymongo
+python-dotenv
 eventlet
