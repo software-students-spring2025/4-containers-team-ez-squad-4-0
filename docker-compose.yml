@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongo:
+    image: mongo:latest
+    container_name: flappy-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - flappy-network
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    # Uncomment for production with authentication
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+    #   - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+
+  # Machine Learning Client
+  ml-client:
+    build: 
+      context: ./machine-learning-client
+      dockerfile: Dockerfile
+    container_name: flappy-ml-client
+    volumes:
+      - ./machine-learning-client:/app
+      - ./dataset:/app/dataset
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/
+      - MONGO_DB=voice_flappy_game
+      - MODEL_PATH=/app/cnn_model.h5
+      - ENCODER_PATH=/app/cnn_label_encoder.pkl
+      - PYTHONUNBUFFERED=1
+      - TZ=UTC
+    networks:
+      - flappy-network
+    restart: unless-stopped
+
+  # Web App
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+    container_name: flappy-web
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./web-app:/app
+      - ./machine-learning-client/cnn_model.h5:/app/cnn_model.h5
+      - ./machine-learning-client/cnn_label_encoder.pkl:/app/cnn_label_encoder.pkl
+    depends_on:
+      - mongo
+      - ml-client
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/
+      - MONGO_DB=voice_flappy_game
+      - FLASK_ENV=development
+      - SECRET_KEY=dev_secret_key
+      - PYTHONUNBUFFERED=1
+      - TZ=UTC
+    networks:
+      - flappy-network
+    restart: unless-stopped
+
+networks:
+  flappy-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
