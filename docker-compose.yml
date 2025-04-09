@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: flappy-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  web-app:
+    build: ./web-app
+    container_name: flappy-web
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./web-app:/app
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:
