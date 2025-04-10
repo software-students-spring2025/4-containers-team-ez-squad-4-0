@@ -1,7 +1,6 @@
 # Voice Command Flappy Game
 
-[![Lint and Format](https://github.com/yourusername/4-containers-team-ez-squad-4-0/actions/workflows/lint.yml/badge.svg)](https://github.com/yourusername/4-containers-team-ez-squad-4-0/actions/workflows/lint.yml)
-[![Test and Coverage](https://github.com/yourusername/4-containers-team-ez-squad-4-0/actions/workflows/test.yml/badge.svg)](https://github.com/yourusername/4-containers-team-ez-squad-4-0/actions/workflows/test.yml)
+![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
 
 A containerized application that uses voice commands to control a Flappy Bird style game through machine learning.
 
