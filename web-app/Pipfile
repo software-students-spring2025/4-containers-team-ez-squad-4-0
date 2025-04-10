@@ -20,6 +20,7 @@ pytest-flask = ">=1.2.0"
 pytest-cov = ">=3.0.0"
 black = ">=22.3.0"
 pylint = ">=2.13.9"
+tomli = "*"
 
 [dev-packages]
 
