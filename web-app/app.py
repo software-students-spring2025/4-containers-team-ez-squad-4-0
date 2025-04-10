@@ -6,20 +6,25 @@ A Flask web application that provides a web interface for a voice-controlled
 Flappy Bird-style game and connects to a MongoDB database for score storage.
 """
 
+# Standard library imports
 import os
 import time
 import logging
-from datetime import datetime, timezone
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from flask_socketio import SocketIO, emit
-import numpy as np
-import librosa
 import base64
 import tempfile
+from datetime import datetime, timezone
+
+# Third-party imports
+import numpy as np
+import librosa
+from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
 from bson.json_util import dumps
 from dotenv import load_dotenv
+# pylint: disable=no-name-in-module, import-error
 import tensorflow as tf
+# pylint: enable=no-name-in-module, import-error
 import joblib
 
 # Configure logging
@@ -55,15 +60,16 @@ def connect_mongo():
     for attempt in range(max_retries):
         try:
             client = MongoClient(MONGO_URI)
-            db = client[MONGO_DB]
+            mongo_db = client[MONGO_DB]
             # Test connection
             client.admin.command('ping')
             logger.info("Successfully connected to MongoDB")
-            return client, db
-        except Exception as e:
-            logger.warning(f"MongoDB connection attempt {attempt+1}/{max_retries} failed: {e}")
+            return client, mongo_db
+        except (MongoClient.ConnectionFailure, MongoClient.ServerSelectionTimeoutError) as e:
+            logger.warning("MongoDB connection attempt %d/%d failed: %s", 
+                           attempt+1, max_retries, e)
             if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
+                logger.info("Retrying in %d seconds...", retry_delay)
                 time.sleep(retry_delay)
     
     logger.error("Failed to connect to MongoDB after multiple attempts")
@@ -86,17 +92,18 @@ def load_model_func():
     
     for attempt in range(max_retries):
         try:
-            logger.info(f"Loading model from {MODEL_PATH}")
+            logger.info("Loading model from %s", MODEL_PATH)
             model = tf.keras.models.load_model(MODEL_PATH)
             
-            logger.info(f"Loading label encoder from {ENCODER_PATH}")
+            logger.info("Loading label encoder from %s", ENCODER_PATH)
             with open(ENCODER_PATH, "rb") as f:
                 label_encoder = joblib.load(f)
                 
-            logger.info(f"Model loaded successfully. Classes: {label_encoder.classes_}")
+            logger.info("Model loaded successfully. Classes: %s", label_encoder.classes_)
             return model, label_encoder
-        except Exception as e:
-            logger.warning(f"Model loading attempt {attempt+1}/{max_retries} failed: {e}")
+        except (IOError, OSError, tf.errors.OpError) as e:
+            logger.warning("Model loading attempt %d/%d failed: %s", 
+                          attempt+1, max_retries, e)
             if attempt < max_retries - 1:
                 logger.info("Retrying in 5 seconds...")
                 time.sleep(5)
@@ -124,10 +131,9 @@ def view_scores():
         if scores_collection is not None:
             latest_scores = list(scores_collection.find().sort("timestamp", -1).limit(10))
             return render_template("scores.html", scores=latest_scores)
-        else:
-            return render_template("scores.html", scores=[], error="Database not connected")
-    except Exception as e:
-        logger.error(f"Error retrieving scores: {e}")
+        return render_template("scores.html", scores=[], error="Database not connected")
+    except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
+        logger.error("Error retrieving scores: %s", e)
         return render_template("scores.html", scores=[], error=str(e))
 
 @app.route("/score", methods=["POST"])
@@ -142,11 +148,11 @@ def receive_score():
                 "score": score_value,
                 "timestamp": datetime.now(timezone.utc)
             })
-            logger.info(f"Score saved: {score_value}")
+            logger.info("Score saved: %d", score_value)
             
         return jsonify({"status": "success"}), 200
-    except Exception as e:
-        logger.error(f"Error saving score: {e}")
+    except (ValueError, TypeError, MongoClient.OperationFailure) as e:
+        logger.error("Error saving score: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/api/commands")
@@ -156,10 +162,9 @@ def get_commands():
         if commands_collection is not None:
             recent_commands = list(commands_collection.find().sort("timestamp", -1).limit(20))
             return dumps(recent_commands), 200, {'Content-Type': 'application/json'}
-        else:
-            return jsonify({"error": "Database not connected"}), 503
-    except Exception as e:
-        logger.error(f"Error retrieving commands: {e}")
+        return jsonify({"error": "Database not connected"}), 503
+    except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
+        logger.error("Error retrieving commands: %s", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/dashboard")
@@ -171,12 +176,12 @@ def dashboard():
 @socketio.on("connect")
 def handle_connect():
     """Handle client connection."""
-    logger.info(f"Client connected: {request.sid}")
+    logger.info("Client connected: %s", request.sid)
 
 @socketio.on("disconnect")
 def handle_disconnect():
     """Handle client disconnection."""
-    logger.info(f"Client disconnected: {request.sid}")
+    logger.info("Client disconnected: %s", request.sid)
 
 @socketio.on("audio")
 def handle_audio(data_url):
@@ -187,7 +192,7 @@ def handle_audio(data_url):
             return
             
         # Decode base64 audio data
-        header, encoded = data_url.split(",", 1)
+        _, encoded = data_url.split(",", 1)
         audio_bytes = base64.b64decode(encoded)
 
         # Save to temporary file
@@ -195,7 +200,7 @@ def handle_audio(data_url):
             f_webm.write(audio_bytes)
             webm_path = f_webm.name
         
-        # Convert audio to WAV format (using pydub)
+        # Import here to avoid top-level import of a potentially unnecessary dependency
         from pydub import AudioSegment
         audio = AudioSegment.from_file(webm_path, format="webm")
         audio = audio.set_frame_rate(16000).set_channels(1)
@@ -204,7 +209,7 @@ def handle_audio(data_url):
 
         # Predict command
         command = predict_command(wav_path)
-        logger.info(f"Predicted command: {command}")
+        logger.info("Predicted command: %s", command)
         
         # Emit command to client
         emit("command", command)
@@ -221,11 +226,11 @@ def handle_audio(data_url):
         try:
             os.remove(webm_path)
             os.remove(wav_path)
-        except Exception as e:
-            logger.warning(f"Error removing temporary files: {e}")
+        except (IOError, OSError) as e:
+            logger.warning("Error removing temporary files: %s", e)
             
-    except Exception as e:
-        logger.error(f"Error processing audio: {e}")
+    except (ValueError, IOError, OSError) as e:
+        logger.error("Error processing audio: %s", e)
         emit("command", "stop")  # Default command on error
 
 def predict_command(wav_path):
@@ -272,15 +277,15 @@ def predict_command(wav_path):
         predicted_index = np.argmax(predictions[0])
         confidence = float(predictions[0][predicted_index])
         command = label_encoder.inverse_transform([predicted_index])[0]
-        logger.info(f"Command: {command}, Confidence: {confidence:.4f}")
+        logger.info("Command: %s, Confidence: %.4f", command, confidence)
         
         # If confidence is low, return a fallback (for example, 'background')
         if confidence < 0.6:
             command = "background"
             
         return command
-    except Exception as e:
-        logger.error(f"Prediction error: {e}")
+    except (ValueError, IOError, OSError) as e:
+        logger.error("Prediction error: %s", e)
         return "stop"
 
 
