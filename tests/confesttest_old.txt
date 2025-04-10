@@ -1,0 +1,29 @@
+# tests/conftest.py
+import sys
+import os
+import pytest
+from unittest.mock import MagicMock, patch
+
+# Add app path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Patch MongoDB during import
+with patch("app.connect_mongo") as mock_connect:
+    mock_client = MagicMock()
+    fake_db = MagicMock()
+    fake_db.game_scores = MagicMock()
+    fake_db.commands = MagicMock()
+    mock_connect.return_value = (mock_client, fake_db)
+
+    from app import create_app
+    flask_app = create_app(testing=True)
+    flask_app.scores_collection = fake_db.game_scores
+    flask_app.commands_collection = fake_db.commands
+
+@pytest.fixture
+def app():
+    yield flask_app
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
