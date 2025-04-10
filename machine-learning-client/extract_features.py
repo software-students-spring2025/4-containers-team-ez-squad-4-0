@@ -13,20 +13,21 @@ SAMPLES_PER_CLIP = int(SAMPLE_RATE * DURATION)
 N_MELS = 128
 SPEC_LENGTH = 44  # roughly ~1 sec of audio
 
+
 def extract_log_mel(file_path):
     """
     Extract log-Mel spectrogram features from an audio file.
-    
+
     Args:
         file_path: Path to the audio file
-        
+
     Returns:
         log_mel_spec: Log-Mel spectrogram features
     """
     try:
         # Load audio file with target sample rate
         y, sr = librosa.load(file_path, sr=SAMPLE_RATE)
-        
+
         # Ensure consistent length by padding or truncating
         if len(y) < SAMPLES_PER_CLIP:
             y = np.pad(y, (0, SAMPLES_PER_CLIP - len(y)))
@@ -35,7 +36,7 @@ def extract_log_mel(file_path):
 
         # Convert to Mel spectrogram
         mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=N_MELS)
-        
+
         # Convert to log scale (dB)
         log_mel_spec = librosa.power_to_db(mel_spec)
 
@@ -51,38 +52,40 @@ def extract_log_mel(file_path):
         print(f"Error processing {file_path}: {e}")
         return None
 
+
 def load_dataset():
     """
     Load and preprocess the voice command dataset.
-    
+
     Returns:
         X: Array of feature matrices
         y: Array of labels
     """
     X = []
     y = []
-    
+
     # Iterate through class directories
     for label in sorted(os.listdir(DATA_DIR)):
         label_dir = os.path.join(DATA_DIR, label)
         if not os.path.isdir(label_dir):
             continue
-            
+
         # Process each audio file
         for filename in os.listdir(label_dir):
             if filename.endswith(".wav"):
                 file_path = os.path.join(label_dir, filename)
                 features = extract_log_mel(file_path)
-                
+
                 if features is not None:
                     # Add channel dimension for CNN (channels_last format)
                     X.append(features[..., np.newaxis])  # shape: (128, 44, 1)
                     y.append(label)
-    
+
     # Print dataset statistics
     print("✅ Dataset loaded:", Counter(y))
-    
+
     return np.array(X), np.array(y)
+
 
 if __name__ == "__main__":
     # Test feature extraction

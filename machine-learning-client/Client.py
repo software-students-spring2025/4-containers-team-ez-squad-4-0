@@ -17,8 +17,10 @@ import datetime
 
 # Third-party imports
 import numpy as np
+
 # pylint: disable=no-name-in-module, import-error
 import tensorflow as tf
+
 # pylint: enable=no-name-in-module, import-error
 from pymongo import MongoClient
 import librosa
@@ -46,7 +48,8 @@ ENCODER_PATH = os.getenv("ENCODER_PATH", "cnn_label_encoder.pkl")
 
 # Audio parameters (for processing recorded files)
 SAMPLE_RATE = 16000  # In seconds, our model expects 16kHz
-DURATION = 1         # seconds, expected duration of each audio sample
+DURATION = 1  # seconds, expected duration of each audio sample
+
 
 class VoiceCommandClient:
     """Client for voice command recognition and processing."""
@@ -55,10 +58,10 @@ class VoiceCommandClient:
         """Initialize the voice command client."""
         # Connect to MongoDB
         self.connect_to_mongodb()
-        
+
         # Load the model and label encoder
         self.load_model()
-        
+
         # Command statistics
         self.command_counts = {
             "up": 0,
@@ -67,7 +70,7 @@ class VoiceCommandClient:
             "right": 0,
             "go": 0,
             "stop": 0,
-            "background": 0
+            "background": 0,
         }
 
     def connect_to_mongodb(self):
@@ -81,16 +84,25 @@ class VoiceCommandClient:
                     self.db = self.mongo_client[MONGO_DB]
                     self.collection = self.db.commands
                     # Test connection
-                    self.mongo_client.admin.command('ping')
+                    self.mongo_client.admin.command("ping")
                     logger.info("Successfully connected to MongoDB")
                     return
-                except (MongoClient.ConnectionFailure, MongoClient.ServerSelectionTimeoutError) as e:
-                    logger.warning("MongoDB connection attempt %d/%d failed: %s", 
-                                  attempt+1, max_retries, e)
+                except (
+                    MongoClient.ConnectionFailure,
+                    MongoClient.ServerSelectionTimeoutError,
+                ) as e:
+                    logger.warning(
+                        "MongoDB connection attempt %d/%d failed: %s",
+                        attempt + 1,
+                        max_retries,
+                        e,
+                    )
                     if attempt < max_retries - 1:
                         logger.info("Retrying in %d seconds...", retry_delay)
                         time.sleep(retry_delay)
-            raise ConnectionError("Failed to connect to MongoDB after multiple attempts")
+            raise ConnectionError(
+                "Failed to connect to MongoDB after multiple attempts"
+            )
         except Exception as e:
             logger.error("Failed to connect to MongoDB: %s", e)
             raise
@@ -101,14 +113,14 @@ class VoiceCommandClient:
             logger.info("Loading model from %s", MODEL_PATH)
             self.model = tf.keras.models.load_model(MODEL_PATH, compile=False)
             self.model.compile(
-                loss='categorical_crossentropy',
-                optimizer='adam',
-                metrics=['accuracy']
+                loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
             )
             logger.info("Loading label encoder from %s", ENCODER_PATH)
             # Load using joblib for compatibility
             self.label_encoder = joblib.load(ENCODER_PATH)
-            logger.info("Model loaded successfully. Classes: %s", self.label_encoder.classes_)
+            logger.info(
+                "Model loaded successfully. Classes: %s", self.label_encoder.classes_
+            )
         except (IOError, OSError) as e:
             logger.error("Failed to load model: %s", e)
             raise
@@ -123,11 +135,7 @@ class VoiceCommandClient:
             # Convert to float in [-1,1]
             audio_data = audio_data.astype(np.float32) / 32768.0
             mfccs = librosa.feature.mfcc(
-                y=audio_data,
-                sr=SAMPLE_RATE,
-                n_mfcc=13,
-                hop_length=512,
-                n_fft=2048
+                y=audio_data, sr=SAMPLE_RATE, n_mfcc=13, hop_length=512, n_fft=2048
             )
             # Fix the time dimension to 44 frames
             if mfccs.shape[1] < 44:
@@ -143,10 +151,10 @@ class VoiceCommandClient:
     def predict(self, audio_data):
         """
         Predict the voice command class from audio data.
-        
+
         Args:
             audio_data: Numpy array of recorded audio data.
-            
+
         Returns:
             predicted_class: The predicted command name.
             confidence: The confidence score.
@@ -177,10 +185,10 @@ class VoiceCommandClient:
     def process_audio_file(self, file_path):
         """
         Process an audio file and perform prediction.
-        
+
         Args:
             file_path: Path to an audio file (e.g., WAV format)
-            
+
         Returns:
             predicted_class: Predicted command name.
             confidence: Confidence score.
@@ -194,11 +202,15 @@ class VoiceCommandClient:
                 "command": predicted_class,
                 "confidence": confidence,
                 "file_path": file_path,
-                "processed": True
+                "processed": True,
             }
             self.save_to_database(prediction_data)
-            logger.info("File %s: Predicted %s (confidence: %.2f)", 
-                       file_path, predicted_class, confidence)
+            logger.info(
+                "File %s: Predicted %s (confidence: %.2f)",
+                file_path,
+                predicted_class,
+                confidence,
+            )
             return predicted_class, confidence
         except (IOError, ValueError) as e:
             logger.error("Error processing audio file %s: %s", file_path, e)
@@ -209,7 +221,7 @@ class VoiceCommandClient:
         Process all audio files (e.g., WAV) in a directory.
         """
         try:
-            audio_files = [f for f in os.listdir(directory_path) if f.endswith('.wav')]
+            audio_files = [f for f in os.listdir(directory_path) if f.endswith(".wav")]
             logger.info("Found %d audio files in %s", len(audio_files), directory_path)
             for filename in audio_files:
                 file_path = os.path.join(directory_path, filename)
@@ -230,7 +242,9 @@ class VoiceCommandClient:
 
     def start_listening(self):
         """(Legacy) Continuous voice command recognition. Disabled in favor of web recording."""
-        logger.info("Continuous listening is disabled. Use the web client for recording.")
+        logger.info(
+            "Continuous listening is disabled. Use the web client for recording."
+        )
 
     def stop_listening(self):
         """Stop listening to audio input."""
@@ -238,7 +252,7 @@ class VoiceCommandClient:
 
     def close(self):
         """Clean up resources."""
-        if hasattr(self, 'mongo_client'):
+        if hasattr(self, "mongo_client"):
             self.mongo_client.close()
         logger.info("Resources cleaned up.")
 
@@ -260,11 +274,19 @@ def main():
             else:
                 logger.error("Invalid command line arguments")
                 print("Usage:")
-                print("  python Client.py                   # (No continuous listening; use web-based recording)")
-                print("  python Client.py --process-dir DIR # Process all audio files in DIR")
-                print("  python Client.py --process-file FILE # Process a single audio file")
+                print(
+                    "  python Client.py                   # (No continuous listening; use web-based recording)"
+                )
+                print(
+                    "  python Client.py --process-dir DIR # Process all audio files in DIR"
+                )
+                print(
+                    "  python Client.py --process-file FILE # Process a single audio file"
+                )
         else:
-            logger.info("No command-line processing selected. Waiting for audio via web client.")
+            logger.info(
+                "No command-line processing selected. Waiting for audio via web client."
+            )
             while True:
                 time.sleep(1)
     except KeyboardInterrupt:
