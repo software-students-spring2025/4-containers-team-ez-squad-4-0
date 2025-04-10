@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+tomli = "*"
 flask = ">=2.0.3"
 flask-socketio = ">=5.1.1"
 eventlet = ">=0.33.0"
@@ -24,4 +25,4 @@ pylint = ">=2.13.9"
 [dev-packages]
 
 [requires]
-python_version = "3.12"
+python_version = "3.10"
