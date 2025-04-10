@@ -23,7 +23,9 @@ import tensorflow as tf
 
 # pylint: enable=no-name-in-module, import-error
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, OperationFailure  # 引入相关异常类
 import librosa
+
 from dotenv import load_dotenv
 import joblib
 
@@ -88,8 +90,8 @@ class VoiceCommandClient:
                     logger.info("Successfully connected to MongoDB")
                     return
                 except (
-                    MongoClient.ConnectionFailure,
-                    MongoClient.ServerSelectionTimeoutError,
+                    ConnectionFailure,
+                    ServerSelectionTimeoutError,
                 ) as e:
                     logger.warning(
                         "MongoDB connection attempt %d/%d failed: %s",
@@ -179,8 +181,9 @@ class VoiceCommandClient:
         try:
             result = self.collection.insert_one(prediction_data)
             logger.info("Saved prediction to database with ID: %s", result.inserted_id)
-        except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
-            logger.error("Error saving to database: %s", e)
+        except (ConnectionFailure, OperationFailure) as e:
+            logger.error(f"Error saving to database: {e}")
+            raise
 
     def process_audio_file(self, file_path):
         """
