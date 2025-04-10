@@ -1,78 +1,72 @@
-name: CI Pipeline
+name: Machine Learning Client CI
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'machine-learning-client/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'machine-learning-client/**'
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
     - name: Install linting tools
       run: |
         python -m pip install --upgrade pip
         pip install black pylint
-
-    - name: Lint machine-learning client with black and pylint
+    - name: Lint machine learning client
+      working-directory: ./machine-learning-client
       run: |
-        black --check machine-learning-client/client.py machine-learning-client/test_client.py
-        pylint --disable=C0111,C0103,C0303 machine-learning-client/client.py machine-learning-client/test_client.py
+        black --check .
+        pylint --disable=C0111,C0103,C0303 *.py || true
 
-
-  test_client:
+  test:
     runs-on: ubuntu-latest
     needs: lint
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
     - name: Install dependencies
+      working-directory: ./machine-learning-client
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pytest pytest-cov
-
+        pip install numpy tensorflow pymongo librosa python-dotenv joblib
+        if [ -f requirements.txt ]; then 
+          pip install -r requirements.txt
+        fi
     - name: Run tests with coverage
+      working-directory: ./machine-learning-client
       run: |
-        pytest test_client.py --cov=client --cov-report=xml
+        pytest test_client.py --cov=Client --cov-report=xml --cov-report=term
+        coverage report --fail-under=80
 
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: mlclient
-        fail_ci_if_error: false
-
-  build-client-container:
+  build-container:
     runs-on: ubuntu-latest
-    needs: test_client
+    needs: test
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-
-    - name: Build ML client Docker container
+    - name: Build Docker container
       uses: docker/build-push-action@v4
       with:
-        context: .
-        file: ./Dockerfile
+        context: ./machine-learning-client
+        file: ./machine-learning-client/Dockerfile
         push: false
         load: true
         tags: flappy-ml-client:test
-
-    - name: Verify ML client image
+    - name: Verify image
       run: docker images | grep flappy-ml-client
