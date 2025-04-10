@@ -5,7 +5,7 @@
 A containerized application that uses voice commands to control a Flappy Bird style game through machine learning.
 
 ## Team Members
--[team 
+
 - [Team Member 1](https://github.com/username1)
 - [Team Member 2](https://github.com/username2)
 - [Team Member 3](https://github.com/username3)
