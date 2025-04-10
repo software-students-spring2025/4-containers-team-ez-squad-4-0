@@ -14,6 +14,11 @@
         
         <div class="game-container float">
             <canvas width="800" height="400"></canvas>
+            <div class="game-overlay">
+                <div class="pulse">
+                    <span style="font-size: 24px;">Click to play or say "go"</span>
+                </div>
+            </div>
         </div>
         
         <div class="card hover-card">
@@ -132,6 +137,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the mic status
             updateMicStatus('Initializing microphone...');
+            
+            // Add click event to game container
+            document.querySelector('.game-container').addEventListener('click', function() {
+                // Simulate "go" command
+                const goCommand = document.querySelector('.command.go');
+                if (goCommand) {
+                    highlightCommand(goCommand);
+                }
+            });
         });
     </script>
 </body>
