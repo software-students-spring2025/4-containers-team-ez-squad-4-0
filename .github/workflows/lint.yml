@@ -19,16 +19,16 @@ jobs:
       run: |
         cd web-app
         python -m pip install --upgrade pip
-        pipenv install
-        pipenv install tomli
+        pip install -r requirements.txt
+        pip install tomli black pylint
     - name: Lint with pylint
       run: |
         cd web-app
-        pipenv run pylint --disable=C0111,C0103 *.py
+        python -m pylint --disable=C0111,C0103 *.py
     - name: Format with black
       run: |
         cd web-app
-        pipenv run black --check .
+        python -m black --check .
 
   lint-and-format-machine-learning-client:
     runs-on: ubuntu-latest
@@ -42,13 +42,13 @@ jobs:
       run: |
         cd machine-learning-client
         python -m pip install --upgrade pip
-        pipenv install
-        pipenv install tomli
+        pip install -r requirements.txt
+        pip install tomli black pylint
     - name: Lint with pylint
       run: |
         cd machine-learning-client
-        pipenv run pylint --disable=C0111,C0103 *.py
+        python -m pylint --disable=C0111,C0103 *.py
     - name: Format with black
       run: |
         cd machine-learning-client
-        pipenv run black --check .
+        python -m black --check .
