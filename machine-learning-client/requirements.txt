@@ -1,7 +1,21 @@
-pygame==2.6.1
-sounddevice==0.4.6
+flask>=2.0.3
+flask-socketio>=5.1.1
+eventlet>=0.33.0
+pymongo>=4.1.1     # This includes the correct bson module
+tensorflow==2.16.1  # Match the ML client version
 numpy==1.26.4
 librosa==0.10.1
-joblib==1.3.2
-tensorflow==2.16.1
-pymongo==4.7.2
+scikit-learn==1.4.2
+python-dotenv>=0.20.0
+pydub>=0.25.1
+werkzeug>=2.0.3    # Important for Flask compatibility
+pytest>=7.1.2
+pytest-flask>=1.2.0
+pytest-cov>=3.0.0
+black>=22.3.0
+pylint>=2.13.9
+# Remove any standalone bson package
+
+
+
+
