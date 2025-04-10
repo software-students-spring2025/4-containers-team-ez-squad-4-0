@@ -8,14 +8,18 @@ Recording is no longer done locally—audio files should be passed in,
 for example, by a web front end.
 """
 
+# Standard library imports
 import os
 import sys
 import time
 import logging
 import datetime
-import threading
+
+# Third-party imports
 import numpy as np
+# pylint: disable=no-name-in-module, import-error
 import tensorflow as tf
+# pylint: enable=no-name-in-module, import-error
 from pymongo import MongoClient
 import librosa
 from dotenv import load_dotenv
@@ -65,7 +69,6 @@ class VoiceCommandClient:
             "stop": 0,
             "background": 0
         }
-        # Note: We no longer initialize PyAudio here since recording happens on the web
 
     def connect_to_mongodb(self):
         """Connect to MongoDB database with retry logic."""
@@ -81,32 +84,33 @@ class VoiceCommandClient:
                     self.mongo_client.admin.command('ping')
                     logger.info("Successfully connected to MongoDB")
                     return
-                except Exception as e:
-                    logger.warning(f"MongoDB connection attempt {attempt+1}/{max_retries} failed: {e}")
+                except (MongoClient.ConnectionFailure, MongoClient.ServerSelectionTimeoutError) as e:
+                    logger.warning("MongoDB connection attempt %d/%d failed: %s", 
+                                  attempt+1, max_retries, e)
                     if attempt < max_retries - 1:
-                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        logger.info("Retrying in %d seconds...", retry_delay)
                         time.sleep(retry_delay)
-            raise Exception("Failed to connect to MongoDB after multiple attempts")
+            raise ConnectionError("Failed to connect to MongoDB after multiple attempts")
         except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {e}")
+            logger.error("Failed to connect to MongoDB: %s", e)
             raise
 
     def load_model(self):
         """Load the trained CNN model and label encoder."""
         try:
-            logger.info(f"Loading model from {MODEL_PATH}")
+            logger.info("Loading model from %s", MODEL_PATH)
             self.model = tf.keras.models.load_model(MODEL_PATH, compile=False)
             self.model.compile(
                 loss='categorical_crossentropy',
                 optimizer='adam',
                 metrics=['accuracy']
             )
-            logger.info(f"Loading label encoder from {ENCODER_PATH}")
+            logger.info("Loading label encoder from %s", ENCODER_PATH)
             # Load using joblib for compatibility
             self.label_encoder = joblib.load(ENCODER_PATH)
-            logger.info(f"Model loaded successfully. Classes: {self.label_encoder.classes_}")
-        except Exception as e:
-            logger.error(f"Failed to load model: {e}")
+            logger.info("Model loaded successfully. Classes: %s", self.label_encoder.classes_)
+        except (IOError, OSError) as e:
+            logger.error("Failed to load model: %s", e)
             raise
 
     def extract_features(self, audio_data):
@@ -132,8 +136,8 @@ class VoiceCommandClient:
             else:
                 mfccs = mfccs[:, :44]
             return mfccs
-        except Exception as e:
-            logger.error(f"Error extracting features: {e}")
+        except (ValueError, RuntimeError) as e:
+            logger.error("Error extracting features: %s", e)
             raise
 
     def predict(self, audio_data):
@@ -158,17 +162,17 @@ class VoiceCommandClient:
             if predicted_class in self.command_counts:
                 self.command_counts[predicted_class] += 1
             return predicted_class, confidence
-        except Exception as e:
-            logger.error(f"Error during prediction: {e}")
+        except (ValueError, RuntimeError) as e:
+            logger.error("Error during prediction: %s", e)
             return "error", 0.0
 
     def save_to_database(self, prediction_data):
         """Save prediction data to MongoDB."""
         try:
             result = self.collection.insert_one(prediction_data)
-            logger.info(f"Saved prediction to database with ID: {result.inserted_id}")
-        except Exception as e:
-            logger.error(f"Error saving to database: {e}")
+            logger.info("Saved prediction to database with ID: %s", result.inserted_id)
+        except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
+            logger.error("Error saving to database: %s", e)
 
     def process_audio_file(self, file_path):
         """
@@ -182,7 +186,7 @@ class VoiceCommandClient:
             confidence: Confidence score.
         """
         try:
-            y, sr = librosa.load(file_path, sr=SAMPLE_RATE)
+            y, _ = librosa.load(file_path, sr=SAMPLE_RATE)
             predicted_class, confidence = self.predict(y)
             timestamp = datetime.datetime.now()
             prediction_data = {
@@ -193,10 +197,11 @@ class VoiceCommandClient:
                 "processed": True
             }
             self.save_to_database(prediction_data)
-            logger.info(f"File {file_path}: Predicted {predicted_class} (confidence: {confidence:.2f})")
+            logger.info("File %s: Predicted %s (confidence: %.2f)", 
+                       file_path, predicted_class, confidence)
             return predicted_class, confidence
-        except Exception as e:
-            logger.error(f"Error processing audio file {file_path}: {e}")
+        except (IOError, ValueError) as e:
+            logger.error("Error processing audio file %s: %s", file_path, e)
             return "error", 0.0
 
     def process_directory(self, directory_path):
@@ -205,15 +210,15 @@ class VoiceCommandClient:
         """
         try:
             audio_files = [f for f in os.listdir(directory_path) if f.endswith('.wav')]
-            logger.info(f"Found {len(audio_files)} audio files in {directory_path}")
+            logger.info("Found %d audio files in %s", len(audio_files), directory_path)
             for filename in audio_files:
                 file_path = os.path.join(directory_path, filename)
                 self.process_audio_file(file_path)
             logger.info("Command statistics:")
             for cmd, count in self.command_counts.items():
-                logger.info(f"  {cmd}: {count}")
-        except Exception as e:
-            logger.error(f"Error processing directory {directory_path}: {e}")
+                logger.info("  %s: %d", cmd, count)
+        except (IOError, OSError) as e:
+            logger.error("Error processing directory %s: %s", directory_path, e)
 
     # Note: The methods below (record_audio and continuous listening) are kept for legacy use,
     # but since you want recording to occur in the web client, they are not used.
@@ -226,9 +231,9 @@ class VoiceCommandClient:
     def start_listening(self):
         """(Legacy) Continuous voice command recognition. Disabled in favor of web recording."""
         logger.info("Continuous listening is disabled. Use the web client for recording.")
-        return
 
     def stop_listening(self):
+        """Stop listening to audio input."""
         logger.info("Listening already stopped.")
 
     def close(self):
@@ -246,11 +251,11 @@ def main():
         if len(sys.argv) > 1:
             if sys.argv[1] == "--process-dir" and len(sys.argv) > 2:
                 directory_path = sys.argv[2]
-                logger.info(f"Processing directory: {directory_path}")
+                logger.info("Processing directory: %s", directory_path)
                 client.process_directory(directory_path)
             elif sys.argv[1] == "--process-file" and len(sys.argv) > 2:
                 file_path = sys.argv[2]
-                logger.info(f"Processing file: {file_path}")
+                logger.info("Processing file: %s", file_path)
                 client.process_audio_file(file_path)
             else:
                 logger.error("Invalid command line arguments")
