@@ -5,144 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Command Flappy Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f4f8;
-            color: #333;
-        }
-        
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-        }
-        
-        h1 {
-            color: #3b82f6;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        
-        .game-container {
-            position: relative;
-            margin-bottom: 1rem;
-        }
-        
-        canvas {
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-        
-        .controls {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 1.5rem;
-        }
-        
-        .card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 1rem;
-        }
-        
-        .button {
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-        
-        .button:hover {
-            background-color: #2563eb;
-        }
-        
-        .button.secondary {
-            background-color: #6b7280;
-        }
-        
-        .button.secondary:hover {
-            background-color: #4b5563;
-        }
-        
-        footer {
-            margin-top: 2rem;
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-        
-        .command-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        
-        .command {
-            background-color: #e0e7ff;
-            color: #4338ca;
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container fade-in">
         <h1>Voice Command Flappy Game</h1>
-        <p class="subtitle">Control the game with your voice! Say "up", "down", "stop", or "go" to play.</p>
+        <p class="subtitle">Control the game with your voice! Say the commands below to navigate your bird through the pipes.</p>
         
-        <div class="game-container">
+        <div class="game-container float">
             <canvas width="800" height="400"></canvas>
-        </div>
-        
-        <div class="card">
-            <h3>Voice Commands</h3>
-            <p>Use these voice commands to control the game:</p>
-            <div class="command-list">
-                <span class="command">up</span>
-                <span class="command">down</span>
-                <span class="command">stop</span>
-                <span class="command">go</span>
+            <div class="game-overlay">
+                <div class="pulse">
+                    <span style="font-size: 24px;">Click to play or say "go"</span>
+                </div>
             </div>
         </div>
         
-        <div class="controls">
-            <a href="/scores" class="button">View High Scores</a>
-            <a href="/dashboard" class="button secondary">Voice Analytics</a>
+        <div class="card hover-card">
+            <h3><i class="fas fa-microphone"></i> Voice Commands</h3>
+            <p>Use these voice commands to control the game:</p>
+            <div class="command-list">
+                <div class="command up" onclick="highlightCommand(this)">
+                    <span class="command-icon"><i class="fas fa-arrow-up"></i></span>
+                    up
+                </div>
+                <div class="command down" onclick="highlightCommand(this)">
+                    <span class="command-icon"><i class="fas fa-arrow-down"></i></span>
+                    down
+                </div>
+                <div class="command stop" onclick="highlightCommand(this)">
+                    <span class="command-icon"><i class="fas fa-stop"></i></span>
+                    stop
+                </div>
+                <div class="command go" onclick="highlightCommand(this)">
+                    <span class="command-icon"><i class="fas fa-play"></i></span>
+                    go
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <div class="recording-status">
+                <div class="recording-indicator"></div>
+                <span id="mic-status">Initializing microphone...</span>
+            </div>
+            
+            <div>
+                <a href="/scores" class="button">
+                    <i class="fas fa-trophy"></i> High Scores
+                </a>
+                <a href="/dashboard" class="button secondary">
+                    <i class="fas fa-chart-line"></i> Voice Analytics
+                </a>
+            </div>
         </div>
         
         <footer>
-            &copy; 2025 Voice Flappy Game | Containerized ML Application
+            <div>
+                <p>&copy; 2025 Voice Flappy Game | Containerized ML Application</p>
+                <p><small>A machine learning powered voice-controlled game</small></p>
+            </div>
         </footer>
     </div>
     
+    <div class="voice-feedback" id="voice-feedback"></div>
+    
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
+    <script>
+        // Highlight commands when clicked or activated
+        function highlightCommand(element) {
+            // Remove active class from all commands
+            document.querySelectorAll('.command').forEach(cmd => {
+                cmd.classList.remove('active');
+            });
+            
+            // Add active class to clicked command
+            element.classList.add('active');
+            
+            // Show feedback
+            const commandText = element.textContent.trim();
+            showVoiceFeedback(commandText);
+            
+            // Remove active class after animation
+            setTimeout(() => {
+                element.classList.remove('active');
+            }, 1000);
+        }
+        
+        // Show voice feedback
+        function showVoiceFeedback(text) {
+            const feedback = document.getElementById('voice-feedback');
+            feedback.textContent = text.toUpperCase();
+            feedback.classList.add('active');
+            
+            setTimeout(() => {
+                feedback.classList.remove('active');
+            }, 2000);
+        }
+        
+        // Update microphone status
+        function updateMicStatus(status, isRecording = false) {
+            const statusElement = document.getElementById('mic-status');
+            statusElement.textContent = status;
+            
+            const indicator = document.querySelector('.recording-indicator');
+            if (isRecording) {
+                indicator.classList.add('recording');
+            } else {
+                indicator.classList.remove('recording');
+            }
+        }
+        
+        // Listen for socket events to highlight commands
+        const socket = io();
+        socket.on("command", function(command) {
+            if (["up", "down", "stop", "go"].includes(command)) {
+                const cmdElement = document.querySelector(`.command.${command}`);
+                if (cmdElement) {
+                    highlightCommand(cmdElement);
+                }
+            }
+        });
+        
+        // Update the DOM when recording status changes
+        document.addEventListener('recordingStateChange', function(e) {
+            updateMicStatus(e.detail.isRecording ? 'Listening...' : 'Microphone ready', e.detail.isRecording);
+        });
+        
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the mic status
+            updateMicStatus('Initializing microphone...');
+            
+            // Add click event to game container
+            document.querySelector('.game-container').addEventListener('click', function() {
+                // Simulate "go" command
+                const goCommand = document.querySelector('.command.go');
+                if (goCommand) {
+                    highlightCommand(goCommand);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
