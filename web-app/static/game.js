@@ -14,9 +14,9 @@ let player = {
     rotation: 0,
     color: "#3b82f6" // Primary blue
 };
-let gravity = 0.005;
-let jump = -0.5;
-let fall = 0.5;
+let gravity = 0.003; // Reduced from 0.005 for slower falling
+let jump = -0.4;    // Reduced from -0.5 for gentler jumps
+let fall = 0.3;     // Reduced from 0.5 for gentler descents
 let pipes = [];
 let score = 0;
 let moving = true;
@@ -33,9 +33,10 @@ let particles = [];
 let bgParticles = [];
 
 // Game settings
-const pipeGap = 180;
+const pipeGap = 180;  
 const pipeWidth = 50;
-let pipeInterval = 120;
+let pipeInterval = 140; // Increased from 120 to create more space between pipes
+let pipeSpeed = 2;     // Reduced from 3 for slower pipe movement
 let frameCount = 0;
 let bgGradient;
 
@@ -202,7 +203,7 @@ function update() {
     if (frameCount % pipeInterval === 0) createPipe();
     
     // Update pipes
-    pipes.forEach(pipe => pipe.x -= 3);
+    pipes.forEach(pipe => pipe.x -= pipeSpeed); // Use the pipeSpeed variable instead of fixed value
     pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
     
     // Check for score and collisions
@@ -345,10 +346,27 @@ function render() {
     // Draw score
     drawText(`Score: ${score}`, 20, 40, colors.scoreText, 28);
     
-    // Draw recording status
-    const micStatus = isRecording ? "Listening..." : "Mic off";
-    const micColor = isRecording ? colors.commandGo : "#888";
-    drawText(`🎤 ${micStatus}`, 20, canvas.height - 20, micColor, 16);
+    // Draw recording status with pulsing effect for "Listening"
+    if (isRecording) {
+        ctx.fillStyle = "rgba(22, 163, 74, 0.2)"; // Light green background
+        ctx.beginPath();
+        ctx.roundRect(10, canvas.height - 40, 130, 30, 15);
+        ctx.fill();
+        
+        // Pulsing dots for recording indication
+        const time = Date.now() / 500;
+        for (let i = 0; i < 3; i++) {
+            const alpha = 0.4 + 0.6 * Math.sin((time + i * 0.5) % Math.PI);
+            ctx.fillStyle = `rgba(22, 163, 74, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(100 + i * 8, canvas.height - 25, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        drawText(`🎤 Listening`, 20, canvas.height - 20, colors.commandGo, 16);
+    } else {
+        drawText(`🎤 Mic off`, 20, canvas.height - 20, "#888", 16);
+    }
     
     // Draw command feedback
     if (commandFeedback.command && commandFeedback.alpha > 0) {
@@ -386,10 +404,32 @@ function render() {
     }
 }
 
-// Game loop
-function loop() {
-    update();
+// Game loop variables for fixed time step
+let lastTime = 0;
+const fixedDeltaTime = 1000/60; // Target: 60 FPS
+let accumulator = 0;
+
+// Game loop with fixed time step
+function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    
+    // Calculate delta time between frames in ms
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+    
+    // Add to the accumulator
+    accumulator += deltaTime;
+    
+    // Update with a fixed time step to ensure consistent speed across devices
+    while (accumulator >= fixedDeltaTime) {
+        update();
+        accumulator -= fixedDeltaTime;
+    }
+    
+    // Render at whatever frame rate the browser provides
     render();
+    
+    // Continue the loop
     requestAnimationFrame(loop);
 }
 
@@ -452,7 +492,7 @@ async function initAudio() {
             const reader = new FileReader();
             reader.onloadend = () => {
                 socket.emit("audio", reader.result);
-                setTimeout(startRecording, 800);
+                setTimeout(startRecording, 500); // Reduced delay between recordings from 800ms to 500ms
             };
             reader.readAsDataURL(audioBlob);
         };
@@ -464,7 +504,7 @@ async function initAudio() {
     }
 }
 
-// Start recording audio
+// Start recording audio with longer duration
 function startRecording() {
     if (mediaRecorder && mediaRecorder.state === 'inactive') {
         isRecording = true;
@@ -475,7 +515,7 @@ function startRecording() {
                 mediaRecorder.stop();
                 isRecording = false;
             }
-        }, 800);
+        }, 800); // Increased from 800ms to 1500ms (1.5 seconds)
     }
 }
 
@@ -497,7 +537,9 @@ window.onload = function() {
     initializeUI();
     updateStatus("🎮 Game loaded, initializing audio...");
     initAudio();
-    loop();
+    
+    // Start the game loop with timestamp
+    requestAnimationFrame(loop);
     
     // Show welcome message
     setTimeout(() => {
