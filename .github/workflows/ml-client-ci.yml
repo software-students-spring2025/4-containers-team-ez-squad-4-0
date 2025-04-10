@@ -24,7 +24,7 @@ jobs:
 
     - name: Lint machine-learning client with black and pylint
       run: |
-        black --check client.py test_client.py
+        black --check Client.py test_client.py
         pylint --disable=C0111,C0103,C0303 client.py test_client.py
 
   test_client:
