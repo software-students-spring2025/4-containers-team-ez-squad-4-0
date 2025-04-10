@@ -4,10 +4,6 @@ on:
     branches: [ main ]
   push:
     branches: [ main ]
-    
-permissions:
-  contents: write
-  
 jobs:
   lint-and-format-web-app:
     runs-on: ubuntu-latest
@@ -31,12 +27,7 @@ jobs:
     - name: Format with black
       run: |
         cd web-app
-        python -m black .
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add .
-        git commit -m "Apply black formatting" || echo "No changes to commit"
-        git push || echo "No changes to push"
+        python -m black --check .
   lint-and-format-machine-learning-client:
     runs-on: ubuntu-latest
     steps:
@@ -59,9 +50,4 @@ jobs:
     - name: Format with black
       run: |
         cd machine-learning-client
-        python -m black .
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add .
-        git commit -m "Apply black formatting" || echo "No changes to commit"
-        git push || echo "No changes to push"
+        python -m black --check .
