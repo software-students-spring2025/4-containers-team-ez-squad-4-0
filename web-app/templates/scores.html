@@ -5,119 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>High Scores - Voice Command Flappy Game</title>  
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f4f8;
-            color: #333;
-        }
-        
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            padding: 2rem;
-        }
-        
-        h1 {
-            color: #3b82f6;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        
-        .card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 1.5rem;
-        }
-        
-        .score-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        
-        .score-table th, .score-table td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .score-table th {
-            background-color: #f9fafb;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .score-table tbody tr:hover {
-            background-color: #f9fafb;
-        }
-        
-        .score-value {
-            font-weight: 600;
-            color: #3b82f6;
-        }
-        
-        .button {
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 1rem;
-        }
-        
-        .button:hover {
-            background-color: #2563eb;
-        }
-        
-        .error-message {
-            background-color: #fee2e2;
-            color: #b91c1c;
-            padding: 1rem;
-            border-radius: 4px;
-            margin: 1rem 0;
-            width: 100%;
-        }
-        
-        footer {
-            margin-top: 2rem;
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container fade-in">
         <h1>High Scores</h1>
-        <p class="subtitle">The best performances in Voice Flappy Game</p>
+        <p class="subtitle">The best performances in Voice Flappy Game. Challenge yourself to reach the top!</p>
         
-        <div class="card">
+        <div class="card hover-card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="card-title">
+                    <i class="fas fa-trophy"></i> Leaderboard
+                </h2>
+                <span id="last-updated" style="color: var(--gray-color); font-size: 0.9rem;"></span>
+            </div>
+            
             {% if error %}
             <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
                 <strong>Error:</strong> {{ error }}
             </div>
             {% endif %}
@@ -126,15 +31,25 @@
             <table class="score-table">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Score</th>
-                        <th>Date</th>
+                        <th><i class="fas fa-hashtag"></i> Rank</th>
+                        <th><i class="fas fa-star"></i> Score</th>
+                        <th><i class="fas fa-calendar-alt"></i> Date</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for score in scores %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
+                    <tr {% if loop.index <= 3 %}class="highlight-row"{% endif %}>
+                        <td>
+                            {% if loop.index == 1 %}
+                            <span class="rank rank-gold"><i class="fas fa-medal"></i> 1</span>
+                            {% elif loop.index == 2 %}
+                            <span class="rank rank-silver"><i class="fas fa-medal"></i> 2</span>
+                            {% elif loop.index == 3 %}
+                            <span class="rank rank-bronze"><i class="fas fa-medal"></i> 3</span>
+                            {% else %}
+                            {{ loop.index }}
+                            {% endif %}
+                        </td>
                         <td class="score-value">{{ score.score }}</td>
                         <td>{{ score.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score.timestamp else 'N/A' }}</td>
                     </tr>
@@ -142,15 +57,53 @@
                 </tbody>
             </table>
             {% else %}
-            <p>No scores recorded yet. Be the first to play!</p>
+            <div class="empty-state">
+                <i class="fas fa-gamepad" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
+                <p>No scores recorded yet. Be the first to play!</p>
+            </div>
             {% endif %}
             
-            <a href="/" class="button">Back to Game</a>
+            <div style="margin-top: 1.5rem; display: flex; justify-content: space-between;">
+                <a href="/" class="button">
+                    <i class="fas fa-gamepad"></i> Back to Game
+                </a>
+                <button onclick="refreshScores()" class="button secondary">
+                    <i class="fas fa-sync-alt"></i> Refresh Scores
+                </button>
+            </div>
         </div>
         
         <footer>
-            &copy; 2025 Voice Flappy Game | Containerized ML Application
+            <div>
+                <p>&copy; 2025 Voice Flappy Game | Containerized ML Application</p>
+                <p><small>A machine learning powered voice-controlled game</small></p>
+            </div>
         </footer>
     </div>
+    
+    <script>
+        // Update the "last updated" timestamp
+        function updateLastUpdated() {
+            const now = new Date();
+            const formatted = now.toLocaleTimeString();
+            document.getElementById('last-updated').textContent = `Last updated: ${formatted}`;
+        }
+        
+        // Refresh scores
+        function refreshScores() {
+            location.reload();
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLastUpdated();
+            
+            // Highlight animation for top scores
+            const rows = document.querySelectorAll('.highlight-row');
+            rows.forEach(row => {
+                row.classList.add('fade-in');
+            });
+        });
+    </script>
 </body>
 </html>
