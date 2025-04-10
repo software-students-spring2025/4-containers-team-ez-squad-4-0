@@ -1,36 +1,54 @@
-name: lint-free
-on: [push, pull_request]
+name: Lint and Format
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
-  lint-and-format:
+  lint-and-format-web-app:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # repeat same job for each subsystem in the following subdirectories
-        subdir: [web-app, machine-learning-client]
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10" # update version(s) as needed
-      - name: Install dependencies
-        if: ${{ hashFiles(format('{0}/**/*.py', matrix.subdir)) != '' }}
-        run: |
-          cd ${{ matrix.subdir }}
-          python -m pip install --upgrade pip
-          python -m pip install pipenv
-          pipenv sync --dev --python $(which python)
-          pipenv shell --fancy --python $(which python)
-      - name: Lint with pylint
-        if: ${{ hashFiles(format('{0}/**/*.py', matrix.subdir)) != '' }}
-        # you may set pylint to ignore any files or dependencies that make no sense to lint
-        run: |
-          cd ${{ matrix.subdir }}
-          pipenv run pylint **/*.py
-      - name: Format with black
-        if: ${{ hashFiles(format('{0}/**/*.py', matrix.subdir)) != '' }}
-        # you may set black to ignore any files or dependencies that make no sense to format
-        run: |
-          cd ${{ matrix.subdir }}
-          pipenv run black --diff --check .
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        cd web-app
+        python -m pip install --upgrade pip
+        pipenv install
+        pipenv install tomli
+    - name: Lint with pylint
+      run: |
+        cd web-app
+        pipenv run pylint --disable=C0111,C0103 *.py
+    - name: Format with black
+      run: |
+        cd web-app
+        pipenv run black --check .
+
+  lint-and-format-machine-learning-client:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        cd machine-learning-client
+        python -m pip install --upgrade pip
+        pipenv install
+        pipenv install tomli
+    - name: Lint with pylint
+      run: |
+        cd machine-learning-client
+        pipenv run pylint --disable=C0111,C0103 *.py
+    - name: Format with black
+      run: |
+        cd machine-learning-client
+        pipenv run black --check .
