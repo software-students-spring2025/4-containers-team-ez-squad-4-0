@@ -1,5 +1,5 @@
-![Python Tests](https://github.com/software-students-spring2025/4-containers-team-ez-squad-4-0/actions/workflows/CI.yaml/badge.svg)
-
+![ML Client Tests](https://github.com/software-students-spring2025/4-containers-team-ez-squad-4-0/actions/workflows/ml-client-ci.yml/badge.svg)
+![Web App Tests](https://github.com/software-students-spring2025/4-containers-team-ez-squad-4-0/actions/workflows/web-app-ci.yml/badge.svg)
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
 
 # Voice Command Flappy Game
