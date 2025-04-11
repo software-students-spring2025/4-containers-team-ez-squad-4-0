@@ -199,44 +199,6 @@ To train the machine learning model on your own dataset:
    ```
    This output should be an h5 and a pkl file.
    
-## Technical Details
-
-### Machine Learning Model
-
-- **Architecture**: Convolutional Neural Network (CNN)
-- **Input**: Log-mel spectrogram features (128 mel bins, 44 time frames)
-- **Training Data**: Voice commands ("up", "down", "left", "right", "go", "stop", "background")
-- **Library**: TensorFlow 2.16.1
-
-### Web Application
-
-- **Framework**: Flask 2.0.3
-- **Real-time Communication**: Flask-SocketIO
-- **Frontend**: HTML5, CSS3, JavaScript
-
-### Database
-
-- **Database**: MongoDB
-- **Collections**:
-  - `game_scores`: Player scores with timestamps
-  - `commands`: Detected voice commands
-
-## Continuous Integration
-
-This project uses GitHub Actions for continuous integration:
-
-- **Lint and Format**: Checks code quality using pylint and black
-- **Test and Coverage**: Runs unit tests with pytest and measures code coverage
-
-## Development Workflow
-
-We followed an agile development workflow:
-
-1. **Task Tracking**: Used GitHub Projects for task organization
-2. **Feature Branches**: Developed features in separate branches
-3. **Pull Requests**: Code reviews conducted through PRs
-4. **Regular Standups**: Daily communication to track progress and address blockers
-
 ## License
 
 [MIT License](LICENSE)
