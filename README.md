@@ -1,6 +1,9 @@
-# Voice Command Flappy Game
+![Python Tests](https://github.com/Junpapadiamond/https://github.com/software-students-spring2025/4-containers-team-ez-squad-4-0/actions/workflows/pytest-ci.yml/badge.svg)
 
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
+
+# Voice Command Flappy Game
+
 
 A containerized application that uses voice commands to control a Flappy Bird style game through machine learning.
 
