@@ -1,11 +1,8 @@
 name: CI/CD
-
-on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   test-ml-client:
     runs-on: ubuntu-latest
@@ -28,7 +25,7 @@ jobs:
     - name: Test with pytest
       run: |
         cd machine-learning-client
-        pytest test_client.py --cov=. --cov-report=xml
+        pytest --cov=. --cov-report=xml --cov-report=term --cov-fail-under=80
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
@@ -36,7 +33,6 @@ jobs:
         file: ./machine-learning-client/coverage.xml
         flags: mlclient
         fail_ci_if_error: false
-
   test-web-app:
     runs-on: ubuntu-latest
     
@@ -52,13 +48,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         cd web-app
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; else pip install -r requirements.txt; fi
         pip install pytest pytest-flask pytest-cov
     
     - name: Test with pytest
       run: |
         cd web-app
-        pytest test_app.py --cov=. --cov-report=xml
+        # Add the current directory to PYTHONPATH so tests can find the app module
+        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/ --cov=. --cov-report=xml --cov-report=term --cov-fail-under=80
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
