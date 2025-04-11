@@ -152,9 +152,11 @@ coverage report
 ```
 
 ### Test the Web App
-cd ../web-app
+
 
 ```bash
+cd ../web-app
+
 # Create and activate a virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
