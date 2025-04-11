@@ -12,6 +12,7 @@ werkzeug>=2.0.3    # Important for Flask compatibility
 pytest>=7.1.2
 pytest-flask>=1.2.0
 pytest-cov>=3.0.0
+coverage>=7.2.0     # For manual coverage run/report
 black>=22.3.0
 pylint>=2.13.9
 # Remove any standalone bson package
