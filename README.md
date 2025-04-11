@@ -140,7 +140,7 @@ pytest --cov=.
 
 # Test the web app
 cd ../web-app
-pytest --cov=.
+python -m pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
 ### Training the Model
