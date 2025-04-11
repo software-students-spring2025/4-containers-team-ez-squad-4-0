@@ -184,11 +184,19 @@ To train the machine learning model on your own dataset:
    └── ...
    ```
 
-2. Run the training script:
+2. **Extract features** from your dataset:
    ```
-   docker exec -it flappy-ml-client python train_model.py
+   cd machine-learning-client
+   python extract_features.py
    ```
-   The output should be an h5 and a pkl file.
+   This will process all .wav files in the dataset/ folder
+
+3. Train the model using the extracted features:
+   ```
+   python train_model.py
+   ```
+   This output should be an h5 and a pkl file.
+   
 ## Technical Details
 
 ### Machine Learning Model
