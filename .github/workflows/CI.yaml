@@ -52,19 +52,33 @@ jobs:
         cd web-app
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
-        pip install pytest pytest-flask pytest-cov
+        pip install pytest pytest-flask pytest-cov pymongo tensorflow librosa joblib
+    
+    - name: Set up testing environment
+      run: |
+        cd web-app
+        # Create necessary environment variables
+        echo "TESTING=True" >> .env
+        echo "SECRET_KEY=test_key" >> .env
+        
+        # Make sure Python can find the modules
+        touch __init__.py
+        
+        # Create dummy model files if needed
+        mkdir -p models
+        touch models/dummy_model.h5
+        touch models/dummy_encoder.pkl
+        
+        # Update environment variables
+        echo "MODEL_PATH=models/dummy_model.h5" >> .env
+        echo "ENCODER_PATH=models/dummy_encoder.pkl" >> .env
     
     - name: Test with pytest
       run: |
         cd web-app
-        # Create an empty __init__.py file if it doesn't exist
-        touch __init__.py
-        # Make sure tests directory is a package
-        touch tests/__init__.py
-        # Copy app.py to the root if it's not already there
-        if [ ! -f app.py ] && [ -f app/app.py ]; then cp app/app.py app.py; fi
-        # Use PYTHONPATH to help Python find the modules
-        PYTHONPATH=$PYTHONPATH:$(pwd) pytest --maxfail=1 --disable-warnings -v tests/ --cov=. --cov-report=xml
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
+        export TESTING=True
+        pytest app_test.py test_routes.py test_ml.py -v --cov=. --cov-report=xml
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
