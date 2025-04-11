@@ -6,10 +6,10 @@ A containerized application that uses voice commands to control a Flappy Bird st
 
 ## Team Members
 
-- [Team Member 1](https://github.com/username1)
-- [Team Member 2](https://github.com/username2)
-- [Team Member 3](https://github.com/username3)
-- [Team Member 4](https://github.com/username3)
+- [ChenJun Hsu](https://github.com/username1)
+- [Eric Zhao](https://github.com/username2)
+- [ShenRui Xue](https://github.com/username3)
+- [Jess Liang](https://github.com/username3)
 
 ## Project Description
 
@@ -54,12 +54,13 @@ The system architecture consists of:
 
 3. Build and start the containers:
    ```
-   docker-compose up -d
+   docker-compose build
+   docker-compose up
    ```
 
 4. Access the application:
    - Web interface: http://localhost:5001
-   - Dashboard: http://localhost:5001/dashboard
+   - Voice Analysis Dashboard: http://localhost:5001/dashboard
    - High scores: http://localhost:5001/scores
 
 ### Voice Commands
@@ -67,7 +68,7 @@ The system architecture consists of:
 The following voice commands can be used to control the game:
 - "up": Move the bird upward
 - "down": Move the bird downward
-- "stop": Pause the game
+- "stop": Freeze the character
 - "go": Start or restart the game
 
 ## Development
@@ -83,12 +84,14 @@ The following voice commands can be used to control the game:
 │   ├── extract_features.py # Feature extraction for audio
 │   ├── train_model.py      # CNN model training
 │   ├── requirements.txt    # Python dependencies
+│   ├── test_client.py      # Test Client.py
 │   └── Dockerfile          # Container configuration
 └── web-app/
     ├── app.py              # Flask web application
     ├── static/             # Static assets (CSS, JS)
     ├── templates/          # HTML templates
     ├── requirements.txt    # Python dependencies
+    ├── test_app.py         # Test app.py
     └── Dockerfile          # Container configuration
 ```
 
@@ -124,7 +127,7 @@ To train the machine learning model on your own dataset:
    ```
    docker exec -it flappy-ml-client python train_model.py
    ```
-
+   The output should be an h5 and a pkl file.
 ## Technical Details
 
 ### Machine Learning Model
