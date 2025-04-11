@@ -1,4 +1,4 @@
-![CI/CD](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/CI.yaml/badge.svg)
+![Python Tests](https://github.com/software-students-spring2025/4-containers-team-ez-squad-4-0/actions/workflows/CI.yaml/badge.svg)
 
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
 
