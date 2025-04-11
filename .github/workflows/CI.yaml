@@ -54,50 +54,78 @@ jobs:
         if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
         pip install pytest pytest-flask pytest-cov
     
-    - name: Fix MongoDB Connection Error
+    - name: Create Mock MongoDB Connection
       run: |
         cd web-app
-        # Create an environment file to force test mode
-        echo "TESTING=True" > .env
         
-        # Create a patch for the MongoDB connection error
-        cat > mongo_patch.py << 'EOF'
+        # Create a mock_mongo.py file
+        cat > mock_mongo.py << 'EOF'
+        """MongoDB mocking for tests"""
+        from unittest.mock import MagicMock
+        import pymongo
         import sys
-        import re
-
-        # Read the app.py file
-        with open('app.py', 'r') as file:
-            content = file.read()
-
-        # Fix the ConnectionFailure and ServerSelectionTimeoutError
-        fixed_content = re.sub(
-            r'(pymongo\.errors\.)ConnectionFailure', 
-            r'MongoClient.ConnectionFailure', 
-            content
-        )
-        fixed_content = re.sub(
-            r'(pymongo\.errors\.)ServerSelectionTimeoutError', 
-            r'MongoClient.ServerSelectionTimeoutError', 
-            content
-        )
-
-        # Write the modified content back
-        with open('app.py', 'w') as file:
-            file.write(fixed_content)
-
-        print("MongoDB connection error patched in app.py")
+        
+        # Create mock classes for MongoDB errors
+        class MockConnectionFailure(Exception):
+            pass
+        
+        class MockServerSelectionTimeoutError(Exception):
+            pass
+        
+        class MockOperationFailure(Exception):
+            pass
+        
+        # Add these errors to pymongo.errors
+        pymongo.errors.ConnectionFailure = MockConnectionFailure
+        pymongo.errors.ServerSelectionTimeoutError = MockServerSelectionTimeoutError
+        pymongo.errors.OperationFailure = MockOperationFailure
+        
+        # Create a mock MongoClient class
+        class MockMongoClient:
+            ConnectionFailure = MockConnectionFailure
+            ServerSelectionTimeoutError = MockServerSelectionTimeoutError
+            OperationFailure = MockOperationFailure
+            
+            def __init__(self, *args, **kwargs):
+                self.admin = MagicMock()
+                self.admin.command.return_value = True
+            
+            def __getitem__(self, name):
+                db = MagicMock()
+                db.__getitem__.return_value = MagicMock()
+                return db
+                
+            def close(self):
+                pass
+        
+        # Override pymongo.MongoClient with our mock
+        pymongo.MongoClient = MockMongoClient
+        
+        print("MongoDB has been successfully mocked")
         EOF
-
-        # Run the patch script
-        python mongo_patch.py
+        
+        # Create environment file
+        echo "TESTING=True" > .env
+        echo "SECRET_KEY=test_key" >> .env
+        
+        # Create directory for ML model files if needed
+        mkdir -p dummy_models
+        touch dummy_models/cnn_model.h5
+        touch dummy_models/cnn_label_encoder.pkl
+        echo "MODEL_PATH=dummy_models/cnn_model.h5" >> .env
+        echo "ENCODER_PATH=dummy_models/cnn_label_encoder.pkl" >> .env
     
     - name: Test with pytest
       env:
         TESTING: 'True'
+        PYTHONPATH: ${{ github.workspace }}/web-app
       run: |
         cd web-app
-        # Use your existing test files
-        PYTHONPATH=$PYTHONPATH:$(pwd) pytest app_test.py test_routes.py test_ml.py --cov=. --cov-report=xml
+        # Import the mock MongoDB before running tests
+        python -c "import mock_mongo; print('Mock loaded successfully')"
+        
+        # Run specific test files instead of discovering
+        python -m pytest app_test.py test_routes.py test_ml.py -v --cov=. --cov-report=xml
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
