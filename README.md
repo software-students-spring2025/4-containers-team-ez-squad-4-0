@@ -28,9 +28,42 @@ Players can control the game by speaking commands like "up", "down", "stop", and
 
 The system architecture consists of:
 
-- **MongoDB Container**: Database for storing game scores and voice command history
-- **Machine Learning Client Container**: Processes voice commands and runs the CNN model
-- **Web App Container**: Flask application serving the game interface and dashboard
+- **MongoDB Container**  
+  Acts as the central database for storing voice command predictions and game scores.  
+  - **Database**: `voice_flappy_game`  
+  - **Collections**:
+    - `commands`
+      - `command`: Predicted voice command (e.g., "up", "stop", "background")
+      - `confidence`: Model confidence score (float)
+      - `timestamp`: Time when the prediction was made
+      - `file_path`: File path if batch processed via `client.py`
+      - `processed`: Boolean flag for processing status
+    - `game_scores`
+      - `score`: Final score submitted from the game
+      - `timestamp`: Time the score was recorded
+
+- **Machine Learning Client Container**  
+  Processes recorded audio input and predicts the associated command using a CNN model.  
+  - Loads and uses `cnn_model.h5` and `cnn_label_encoder.pkl`
+  - Extracts MFCC features using `librosa`  
+  - Supports batch prediction via CLI:
+    - `--process-file <path>`: Predict one audio file
+    - `--process-dir <dir>`: Predict all `.wav` files in a folder
+  - Saves prediction results to MongoDB under `commands`
+
+- **Web App Container**  
+  A Flask + Flask-SocketIO application that hosts the game interface and live prediction dashboard.  
+  - Accepts base64 audio over Socket.IO, decodes and converts it to `.wav`
+  - Uses the same ML model to predict voice commands in real-time
+  - Emits predictions back to the front end immediately
+  - Stores commands and scores to MongoDB
+  - Routes:
+    - `/`: Main game page
+    - `/scores`: View recent scores
+    - `/score`: POST endpoint for saving score
+    - `/api/commands`: Return recent command predictions in JSON
+    - `/dashboard`: (Optional) Web dashboard for visualization
+
 
 ## Setup Instructions
 
