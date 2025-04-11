@@ -9,10 +9,10 @@ A containerized application that uses voice commands to control a Flappy Bird st
 
 ## Team Members
 
-- [ChenJun Hsu](https://github.com/username1)
-- [Eric Zhao](https://github.com/username2)
-- [ShenRui Xue](https://github.com/username3)
-- [Jess Liang](https://github.com/username3)
+- [ChenJun Hsu](https://github.com/Junpapadiamond)
+- [Eric Zhao](https://github.com/Ericzzy675)
+- [ShenRui Xue](https://github.com/ShenruiXue666)
+- [Jess Liang](https://github.com/jess-liang322)
 
 ## Project Description
 
