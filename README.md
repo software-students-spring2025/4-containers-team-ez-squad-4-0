@@ -2,7 +2,7 @@
 
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
 
-A containerized application that uses voice commands to control a Flappy Bird style game through machine learning.
+A containerized application that uses voice commands to control a Flappy Bird style game through machine learning. aaa
 
 ## Team Members
 
