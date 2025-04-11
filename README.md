@@ -62,7 +62,7 @@ The system architecture consists of:
     - `/scores`: View recent scores
     - `/score`: POST endpoint for saving score
     - `/api/commands`: Return recent command predictions in JSON
-    - `/dashboard`: (Optional) Web dashboard for visualization
+    - `/dashboard`: Web dashboard for visualization
 
 
 ## Setup Instructions
