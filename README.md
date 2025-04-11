@@ -131,15 +131,38 @@ The following voice commands can be used to control the game:
     └── Dockerfile          # Container configuration
 ```
 
-### Running Tests
+## Running Tests
+To test both the Machine Learning client and the Web App components, follow the steps below.
+
+### Test the Machine Learning Client
 
 ```bash
-# Test the machine learning client
 cd machine-learning-client
-pytest --cov=.
 
-# Test the web app
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests with coverage
+coverage run --source=Client -m pytest test_client.py
+coverage report
+```
+
+### Test the Web App
 cd ../web-app
+
+```bash
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install web app test dependencies
+pip install -r requirements-test.txt
+
+# Run tests with coverage
 python -m pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
