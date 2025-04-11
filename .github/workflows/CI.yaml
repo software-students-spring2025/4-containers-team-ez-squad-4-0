@@ -50,19 +50,115 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         cd web-app
+        # Install pymongo explicitly first
+        pip install pymongo
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
         pip install pytest pytest-flask pytest-cov
+        # Install any other missing dependencies
+        pip install flask flask-socketio tensorflow numpy librosa joblib pydub
+    
+    - name: Fix conftest for CI environment
+      run: |
+        cd web-app
+        # Create a special version of conftest.py that works in CI
+        echo "\"\"\"Pytest configuration file with fixtures for CI environment.\"\"\"
+import os
+import pytest
+from unittest.mock import MagicMock, patch
+from flask import Flask
+import numpy as np
+
+# Set environment to testing
+os.environ['TESTING'] = 'True'
+
+# Import app after setting testing environment
+@pytest.fixture
+def app():
+    \"\"\"Create and configure a Flask application for testing.\"\"\"
+    from app import app as flask_app
+    # Set test config
+    flask_app.config.update({
+        \"TESTING\": True,
+        \"SECRET_KEY\": \"test_secret_key\",
+    })
+    
+    yield flask_app
+
+@pytest.fixture
+def client(app):
+    \"\"\"A test client for the app.\"\"\"
+    return app.test_client()
+
+@pytest.fixture
+def runner(app):
+    \"\"\"A test CLI runner for the app.\"\"\"
+    return app.test_cli_runner()
+
+@pytest.fixture
+def mock_mongodb():
+    \"\"\"Mock MongoDB collections.\"\"\"
+    # Create mock collections
+    mock_scores = MagicMock()
+    mock_commands = MagicMock()
+    mock_db = MagicMock()
+    mock_client = MagicMock()
+    
+    # Setup return values for find operations
+    mock_scores.find.return_value.sort.return_value.limit.return_value = [
+        {\"score\": 10, \"timestamp\": \"2023-01-01T00:00:00Z\"},
+        {\"score\": 5, \"timestamp\": \"2023-01-02T00:00:00Z\"}
+    ]
+    
+    mock_commands.find.return_value.sort.return_value.limit.return_value = [
+        {\"command\": \"up\", \"timestamp\": \"2023-01-01T00:00:00Z\", \"processed\": True},
+        {\"command\": \"down\", \"timestamp\": \"2023-01-02T00:00:00Z\", \"processed\": True}
+    ]
+    
+    # Return the mocks
+    yield mock_client, mock_scores, mock_commands
+
+@pytest.fixture
+def mock_tf_model():
+    \"\"\"Mock TensorFlow model.\"\"\"
+    with patch('tensorflow.keras.models.load_model') as mock_load:
+        mock_model = MagicMock()
+        mock_model.predict.return_value = np.array([[0.1, 0.8, 0.1]])  # Mock prediction
+        mock_load.return_value = mock_model
+        yield mock_model
+
+@pytest.fixture
+def mock_label_encoder():
+    \"\"\"Mock label encoder.\"\"\"
+    with patch('joblib.load') as mock_load:
+        mock_encoder = MagicMock()
+        mock_encoder.inverse_transform.return_value = [\"up\"]
+        mock_encoder.classes_ = [\"background\", \"up\", \"down\"]
+        mock_load.return_value = mock_encoder
+        yield mock_encoder
+
+@pytest.fixture
+def socketio_client(app):
+    \"\"\"Create a socketio test client.\"\"\"
+    from flask_socketio import SocketIOTestClient
+    from app import socketio
+    
+    return SocketIOTestClient(app, socketio)" > tests/conftest_ci.py
+        
+        # Create symbolic link or copy the file
+        cp tests/conftest_ci.py tests/conftest.py
+        
+        # Create an empty __init__.py file if it doesn't exist
+        touch __init__.py
+        touch tests/__init__.py
     
     - name: Test with pytest
       run: |
         cd web-app
-        # Create an empty __init__.py file if it doesn't exist
-        touch __init__.py
-        # Make sure tests directory is a package
-        touch tests/__init__.py
-        # Copy app.py to the root if it's not already there
-        if [ ! -f app.py ] && [ -f app/app.py ]; then cp app/app.py app.py; fi
+        # Set TESTING environment variable
+        export TESTING=True
+        # Run a simple test first to check imports
+        python -c "from app import app; print('App imported successfully')"
         # Use PYTHONPATH to help Python find the modules
         PYTHONPATH=$PYTHONPATH:$(pwd) pytest --maxfail=1 --disable-warnings -v tests/ --cov=. --cov-report=xml
     
