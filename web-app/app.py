@@ -13,6 +13,8 @@ import logging
 import base64
 import tempfile
 from datetime import datetime, timezone
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+
 
 # Third-party imports
 import numpy as np
@@ -68,10 +70,7 @@ def connect_mongo():
             client.admin.command("ping")
             logger.info("Successfully connected to MongoDB")
             return client, mongo_db
-        except (
-            MongoClient.ConnectionFailure,
-            MongoClient.ServerSelectionTimeoutError,
-        ) as e:
+        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
             logger.warning(
                 "MongoDB connection attempt %d/%d failed: %s",
                 attempt + 1,
@@ -84,7 +83,6 @@ def connect_mongo():
 
     logger.error("Failed to connect to MongoDB after multiple attempts")
     return None, None
-
 
 # Connect to MongoDB
 mongo_client, db = connect_mongo()
@@ -210,14 +208,12 @@ def handle_disconnect():
     logger.info("Client disconnected: %s", request.sid)
 
 
+import requests  # make sure this is at the top of your file
+
 @socketio.on("audio")
 def handle_audio(data_url):
-    """Process audio data and predict commands."""
+    """Process audio data and send to ML container for prediction."""
     try:
-        if not model or not label_encoder:
-            emit("command", "stop")
-            return
-
         # Decode base64 audio data
         _, encoded = data_url.split(",", 1)
         audio_bytes = base64.b64decode(encoded)
@@ -227,22 +223,29 @@ def handle_audio(data_url):
             f_webm.write(audio_bytes)
             webm_path = f_webm.name
 
-        # Import here to avoid top-level import of a potentially unnecessary dependency
-        from pydub import AudioSegment
+        from pydub import AudioSegment  # Local import
 
+        # Convert .webm to mono 16kHz WAV
         audio = AudioSegment.from_file(webm_path, format="webm")
         audio = audio.set_frame_rate(16000).set_channels(1)
-        wav_path = webm_path.replace(".webm", ".wav")
-        audio.export(wav_path, format="wav")
+        samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+        samples = (samples / 32768.0).tolist()
 
-        # Predict command
-        command = predict_command(wav_path)
-        logger.info("Predicted command: %s", command)
+        # Call ML container for prediction
+        try:
+            res = requests.post("http://ml-client:5002/predict", json={"audio": samples}, timeout=5)
+            res.raise_for_status()
+            prediction = res.json()
+            command = prediction.get("command", "stop")
+            logger.info("Received prediction: %s", command)
+        except Exception as e:
+            logger.error("Failed to get prediction from ML API: %s", e)
+            command = "stop"
 
-        # Emit command to client
+        # Emit command to frontend
         emit("command", command)
 
-        # Save command to database if connected
+        # Save command to MongoDB
         if commands_collection is not None:
             commands_collection.insert_one(
                 {
@@ -252,16 +255,16 @@ def handle_audio(data_url):
                 }
             )
 
-        # Clean up temporary files
-        try:
-            os.remove(webm_path)
-            os.remove(wav_path)
-        except (IOError, OSError) as e:
-            logger.warning("Error removing temporary files: %s", e)
+        # Cleanup temp files
+        for f in [webm_path]:
+            try:
+                os.remove(f)
+            except Exception as e:
+                logger.warning("Failed to delete file %s: %s", f, e)
 
-    except (ValueError, IOError, OSError) as e:
-        logger.error("Error processing audio: %s", e)
-        emit("command", "stop")  # Default command on error
+    except Exception as e:
+        logger.error("Error handling audio input: %s", e)
+        emit("command", "stop")
 
 
 def predict_command(wav_path):

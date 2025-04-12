@@ -20,11 +20,14 @@ services:
     #   - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
 
   # Machine Learning Client
+    # Machine Learning Client
   ml-client:
     build: 
       context: ./machine-learning-client
       dockerfile: Dockerfile
     container_name: flappy-ml-client
+    ports:
+      - "5002:5002"  # 👈 Add this line to expose ML API
     volumes:
       - ./machine-learning-client:/app
       - ./dataset:/app/dataset
@@ -40,6 +43,7 @@ services:
     networks:
       - flappy-network
     restart: unless-stopped
+
 
   # Web App
   web-app:
