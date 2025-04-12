@@ -171,7 +171,7 @@ python -m pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
 ### Training the Model
-
+ **The full raw audio dataset used for training is stored on [Google Drive](https://drive.google.com/drive/folders/1Goo-JfKp5nqPBsH-AYdKKXvPrizOOndY?usp=sharing).**  
 To train the machine learning model on your own dataset:
 
 1. Place your audio samples in the `dataset` directory, organized by command:
