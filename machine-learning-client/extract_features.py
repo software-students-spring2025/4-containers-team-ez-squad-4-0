@@ -1,11 +1,8 @@
-# === extract_features.py (using log-Mel Spectrogram) ===
 import os
 import numpy as np
 import librosa
 from collections import Counter
 
-# === Settings ===
-# === Settings ===
 DATA_DIR = "/home/jun/4-containers-team-ez-squad-4-0/SWE_project4/dataset"
 SAMPLE_RATE = 16000
 DURATION = 1.0  # seconds

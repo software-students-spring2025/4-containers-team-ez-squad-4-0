@@ -8,26 +8,20 @@ Recording is no longer done locally—audio files should be passed in,
 for example, by a web front end.
 """
 
-# Standard library imports
+
 import os
 import sys
 import time
 import logging
 import datetime
-
-# Third-party imports
 import numpy as np
-
-# pylint: disable=no-name-in-module, import-error
 import tensorflow as tf
-
-# pylint: enable=no-name-in-module, import-error
 from pymongo import MongoClient
 from pymongo.errors import (
     ConnectionFailure,
     ServerSelectionTimeoutError,
     OperationFailure,
-)  # 引入相关异常类
+)  
 import librosa
 
 from dotenv import load_dotenv
@@ -52,7 +46,7 @@ MONGO_DB = os.getenv("MONGO_DB", "voice_flappy_game")
 MODEL_PATH = os.getenv("MODEL_PATH", "cnn_model.h5")
 ENCODER_PATH = os.getenv("ENCODER_PATH", "cnn_label_encoder.pkl")
 
-# Audio parameters (for processing recorded files)
+# For processing recorded files
 SAMPLE_RATE = 16000  # In seconds, our model expects 16kHz
 DURATION = 1  # seconds, expected duration of each audio sample
 
@@ -83,7 +77,7 @@ class VoiceCommandClient:
         """Connect to MongoDB database with retry logic."""
         try:
             max_retries = 5
-            retry_delay = 5  # seconds
+            retry_delay = 5  
             for attempt in range(max_retries):
                 try:
                     self.mongo_client = MongoClient(MONGO_URI)
@@ -239,8 +233,6 @@ class VoiceCommandClient:
         except (IOError, OSError) as e:
             logger.error("Error processing directory %s: %s", directory_path, e)
 
-    # Note: The methods below (record_audio and continuous listening) are kept for legacy use,
-    # but since you want recording to occur in the web client, they are not used.
     def record_audio(self):
         """(Legacy) Record audio from microphone. Not used since recording happens in the web."""
         logger.info("Recording is disabled; use web-based recording instead.")
