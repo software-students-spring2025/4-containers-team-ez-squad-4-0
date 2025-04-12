@@ -2,28 +2,25 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies for audio processing
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 \
-    portaudio19-dev \
-    python3-dev \
-    gcc \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first for better caching
+# Install dependencies first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy ML model and files
+COPY Client.py .
+COPY cnn_model.h5 .
+COPY cnn_label_encoder.pkl .
 
-# Create directories if they don't exist
-RUN mkdir -p /app/tests
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV API_PORT=5002
+ENV MONGO_URI=mongodb://mongo:27017/
+ENV MONGO_DB=voice_flappy_game
+ENV MODEL_PATH=cnn_model.h5
+ENV ENCODER_PATH=cnn_label_encoder.pkl
 
-# Make scripts executable
-RUN chmod +x Client.py
+# Expose API port
+EXPOSE 5002
 
-
-# Run the ML client
-CMD ["python", "Client.py"]
+# Run the API server
+CMD ["python", "Client.py", "--api"]

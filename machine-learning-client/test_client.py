@@ -16,6 +16,7 @@ DUMMY_AUDIO = np.random.randn(16000)
 
 @pytest.fixture
 def mocked_client(monkeypatch):
+    # Mock MongoDB and model loading to avoid actual DB and model loading
     monkeypatch.setattr(
         VoiceCommandClient, "connect_to_mongodb", lambda self: None
     )  # Mock MongoDB connection
@@ -74,8 +75,10 @@ def test_process_directory_error_handling(mocked_client, monkeypatch):
         lambda path: (_ for _ in ()).throw(OSError("Failed to read directory")),
     )
 
+    # Mock the save_to_database method to avoid actual DB calls
     mocked_client.save_to_database = MagicMock()
 
+    # Test if process_directory gracefully handles the error
     try:
         mocked_client.process_directory("fake_dir")
     except Exception as e:
@@ -87,7 +90,7 @@ def test_process_directory_error_handling(mocked_client, monkeypatch):
 
 def test_predict_valid_input(mocked_client):
     """Test that the model correctly predicts a valid audio input."""
-    valid_audio = np.random.randn(16000) 
+    valid_audio = np.random.randn(16000)  # Simulate normal audio input (random noise)
 
     # Mock the predict function to return a known label with confidence
     mocked_client.predict = MagicMock(
@@ -157,8 +160,8 @@ def test_process_audio_file_valid(mocked_client, monkeypatch):
     label, confidence = mocked_client.process_audio_file("valid_file.wav")
 
     # Check if the predicted label and confidence are correct
-    assert label == "jump"  
-    assert confidence == 0.8  
+    assert label == "jump"  # Assuming 'jump' is the predicted label in this mock
+    assert confidence == 0.8  # Assuming the mock confidence is 0.8
 
     # Ensure that the save_to_database method was called
     mocked_client.save_to_database.assert_called_once()
@@ -180,6 +183,7 @@ def test_process_audio_file_invalid_path(mocked_client, monkeypatch):
     try:
         mocked_client.process_audio_file("invalid_path.wav")
     except Exception as e:
+        # Ensure the exception is handled gracefully
         assert isinstance(e, FileNotFoundError)
 
     # Ensure no database insertion happens when the file path is invalid
@@ -217,6 +221,7 @@ def test_connect_to_mongodb_success(monkeypatch):
     # Create a client instance
     client = VoiceCommandClient()
 
+    # Now manually set up the mocked client attributes
     mock_client = MagicMock()
     mock_db = MagicMock()
     mock_collection = MagicMock()
@@ -262,7 +267,7 @@ def test_connect_to_mongodb_retry_success(monkeypatch):
         for _ in range(3):
             try:
                 self.mongo_client.admin.command("ping")
-                break  
+                break  # If we don't get an exception, we're done
             except ConnectionFailure:
                 call_count[0] += 1
 
@@ -394,6 +399,7 @@ def test_process_directory_with_files(mocked_client, monkeypatch):
     # Mock process_audio_file to return predictable results
     def mock_process_file(file_path):
         if "file1.wav" in file_path:
+            # Update the command counts manually since we're mocking the method
             mocked_client.command_counts["up"] += 1
             return "up", 0.9
         else:
@@ -523,6 +529,7 @@ def test_record_audio(mocked_client):
     # Call record_audio
     audio = mocked_client.record_audio()
 
+    # Should return silent audio of expected length
     assert isinstance(audio, np.ndarray)
     assert audio.shape == (16000,)  # 1 second at 16kHz
     assert np.all(audio == 0)  # Should be silent
@@ -534,6 +541,7 @@ def test_legacy_functions(mocked_client):
     mocked_client.start_listening()
     mocked_client.stop_listening()
 
+    # No assertions needed, we're just testing that they don't raise errors
 
 
 def test_load_model_failure(monkeypatch):

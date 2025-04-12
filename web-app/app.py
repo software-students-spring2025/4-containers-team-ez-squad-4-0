@@ -22,6 +22,7 @@ from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
 from bson.json_util import dumps
 from dotenv import load_dotenv
+import requests
 
 # pylint: disable=no-name-in-module, import-error
 import tensorflow as tf
@@ -44,14 +45,13 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
 MONGO_DB = os.getenv("MONGO_DB", "voice_flappy_game")
 
+# ML Client API URL (use environment variable if available)
+ML_CLIENT_API_URL = os.getenv("ML_CLIENT_API_URL", "http://ml-client:5002/api/predict")
+
 # Flask and SocketIO setup
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev_secret_key")
 socketio = SocketIO(app, cors_allowed_origins="*")
-
-# ML model paths
-MODEL_PATH = os.getenv("MODEL_PATH", "cnn_model.h5")
-ENCODER_PATH = os.getenv("ENCODER_PATH", "cnn_label_encoder.pkl")
 
 
 # Connect to MongoDB with retry logic
@@ -68,10 +68,7 @@ def connect_mongo():
             client.admin.command("ping")
             logger.info("Successfully connected to MongoDB")
             return client, mongo_db
-        except (
-            MongoClient.ConnectionFailure,
-            MongoClient.ServerSelectionTimeoutError,
-        ) as e:
+        except Exception as e:
             logger.warning(
                 "MongoDB connection attempt %d/%d failed: %s",
                 attempt + 1,
@@ -97,43 +94,6 @@ else:
     commands_collection = None
 
 
-# Load ML model with retry logic
-def load_model_func():
-    """Load the voice command recognition model and label encoder."""
-    max_retries = 3
-
-    for attempt in range(max_retries):
-        try:
-            logger.info("Loading model from %s", MODEL_PATH)
-            model = tf.keras.models.load_model(MODEL_PATH)
-
-            logger.info("Loading label encoder from %s", ENCODER_PATH)
-            with open(ENCODER_PATH, "rb") as f:
-                label_encoder = joblib.load(f)
-
-            logger.info(
-                "Model loaded successfully. Classes: %s", label_encoder.classes_
-            )
-            return model, label_encoder
-        except (IOError, OSError, tf.errors.OpError) as e:
-            logger.warning(
-                "Model loading attempt %d/%d failed: %s", attempt + 1, max_retries, e
-            )
-            if attempt < max_retries - 1:
-                logger.info("Retrying in 5 seconds...")
-                time.sleep(5)
-
-    logger.error("Failed to load model after multiple attempts")
-    return None, None
-
-
-# Try to load ML model if files exist
-if os.path.exists(MODEL_PATH) and os.path.exists(ENCODER_PATH):
-    model, label_encoder = load_model_func()
-else:
-    logger.warning("Model files not found. Voice command recognition will not work.")
-    model, label_encoder = None, None
-
 
 # Routes
 @app.route("/")
@@ -152,7 +112,7 @@ def view_scores():
             )
             return render_template("scores.html", scores=latest_scores)
         return render_template("scores.html", scores=[], error="Database not connected")
-    except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
+    except Exception as e:
         logger.error("Error retrieving scores: %s", e)
         return render_template("scores.html", scores=[], error=str(e))
 
@@ -171,7 +131,7 @@ def receive_score():
             logger.info("Score saved: %d", score_value)
 
         return jsonify({"status": "success"}), 200
-    except (ValueError, TypeError, MongoClient.OperationFailure) as e:
+    except Exception as e:
         logger.error("Error saving score: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -186,7 +146,7 @@ def get_commands():
             )
             return dumps(recent_commands), 200, {"Content-Type": "application/json"}
         return jsonify({"error": "Database not connected"}), 503
-    except (MongoClient.ConnectionFailure, MongoClient.OperationFailure) as e:
+    except Exception as e:
         logger.error("Error retrieving commands: %s", e)
         return jsonify({"error": str(e)}), 500
 
@@ -214,10 +174,6 @@ def handle_disconnect():
 def handle_audio(data_url):
     """Process audio data and predict commands."""
     try:
-        if not model or not label_encoder:
-            emit("command", "stop")
-            return
-
         # Decode base64 audio data
         _, encoded = data_url.split(",", 1)
         audio_bytes = base64.b64decode(encoded)
@@ -235,9 +191,9 @@ def handle_audio(data_url):
         wav_path = webm_path.replace(".webm", ".wav")
         audio.export(wav_path, format="wav")
 
-        # Predict command
+        # Get prediction from ML client
         command = predict_command(wav_path)
-        logger.info("Predicted command: %s", command)
+        logger.info(f"Predicted command: {command}")
 
         # Emit command to client
         emit("command", command)
@@ -257,66 +213,41 @@ def handle_audio(data_url):
             os.remove(webm_path)
             os.remove(wav_path)
         except (IOError, OSError) as e:
-            logger.warning("Error removing temporary files: %s", e)
+            logger.warning(f"Error removing temporary files: {e}")
 
-    except (ValueError, IOError, OSError) as e:
-        logger.error("Error processing audio: %s", e)
+    except Exception as e:
+        logger.error(f"Error processing audio: {e}")
         emit("command", "stop")  # Default command on error
 
 
 def predict_command(wav_path):
     """
-    Predict voice command from audio file.
-
+    Send audio to ML client for prediction.
+    
     Args:
         wav_path: Path to WAV audio file
-
+        
     Returns:
         command: Predicted command string
     """
     try:
-        # Load audio at 16kHz.
-        y, sr = librosa.load(wav_path, sr=16000)
-
-        # Ensure the audio is exactly 1 second (16,000 samples)
-        TARGET_SAMPLES = 16000
-        if len(y) < TARGET_SAMPLES:
-            y = np.pad(y, (0, TARGET_SAMPLES - len(y)))
+        with open(wav_path, 'rb') as audio_file:
+            files = {'audio': (os.path.basename(wav_path), audio_file, 'audio/wav')}
+            
+            # Make request to the ML client API - use the ML_CLIENT_API_URL
+            response = requests.post(ML_CLIENT_API_URL, files=files, timeout=5)
+            
+        if response.status_code == 200:
+            prediction_data = response.json()
+            command = prediction_data['command']
+            confidence = prediction_data.get('confidence', 0)
+            logger.info(f"Command from ML client: {command}, Confidence: {confidence:.4f}")
+            return command
         else:
-            y = y[:TARGET_SAMPLES]
-
-        # Compute the mel spectrogram with 128 mel bins
-        N_MELS = 128
-        mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=N_MELS)
-        log_mel = librosa.power_to_db(mel_spec)
-
-        # Ensure fixed time frames (44 frames)
-        SPEC_FRAMES = 44
-        if log_mel.shape[1] < SPEC_FRAMES:
-            pad_width = SPEC_FRAMES - log_mel.shape[1]
-            log_mel = np.pad(log_mel, ((0, 0), (0, pad_width)), mode="constant")
-        else:
-            log_mel = log_mel[:, :SPEC_FRAMES]
-
-        # At this point, log_mel has shape (128, 44).
-        # For channels_last input, we want shape (1, 128, 44, 1).
-        input_data = np.expand_dims(log_mel, axis=0)  # Now (1, 128, 44)
-        input_data = np.expand_dims(input_data, axis=-1)  # Now (1, 128, 44, 1)
-
-        # Make prediction
-        predictions = model.predict(input_data)
-        predicted_index = np.argmax(predictions[0])
-        confidence = float(predictions[0][predicted_index])
-        command = label_encoder.inverse_transform([predicted_index])[0]
-        logger.info("Command: %s, Confidence: %.4f", command, confidence)
-
-        # If confidence is low, return a fallback (for example, 'background')
-        if confidence < 0.6:
-            command = "background"
-
-        return command
-    except (ValueError, IOError, OSError) as e:
-        logger.error("Prediction error: %s", e)
+            logger.error(f"ML client error: {response.text}")
+            return "stop"
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
         return "stop"
 
 

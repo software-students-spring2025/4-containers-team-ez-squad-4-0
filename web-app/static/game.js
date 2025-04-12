@@ -32,6 +32,10 @@ let commandFeedback = { command: "", alpha: 0, timer: 0 };
 let particles = [];
 let bgParticles = [];
 
+// Debugging features
+let debugMode = true; // Set to true to enable debugging
+let commandHistory = []; // Store recent commands
+
 // Game settings
 const pipeGap = 180;  
 const pipeWidth = 50;
@@ -269,6 +273,41 @@ function update() {
     frameCount++;
 }
 
+// Render debug information panel
+function renderDebugInfo() {
+    if (!debugMode) return;
+    
+    const padding = 10;
+    const lineHeight = 20;
+    
+    // Background for debug panel
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillRect(
+        canvas.width - 200 - padding, 
+        padding, 
+        200, 
+        commandHistory.length * lineHeight + padding * 3 + lineHeight
+    );
+    
+    // Command history
+    ctx.font = "14px monospace";
+    ctx.fillStyle = "#fff";
+    commandHistory.forEach((cmd, i) => {
+        ctx.fillText(
+            `${cmd.time}: ${cmd.command}`, 
+            canvas.width - 190, 
+            padding * 2 + i * lineHeight
+        );
+    });
+    
+    // Audio status
+    ctx.fillText(
+        `Recording: ${isRecording ? "YES" : "NO"}`,
+        canvas.width - 190,
+        padding * 2 + commandHistory.length * lineHeight + 10
+    );
+}
+
 // Render game graphics
 function render() {
     // Draw background
@@ -387,6 +426,9 @@ function render() {
         drawText(commandFeedback.command.toUpperCase(), canvas.width/2, 45, cmdColor, 24, "center");
     }
     
+    // Draw debug information
+    renderDebugInfo();
+    
     // Draw game over overlay
     if (gameOver) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -437,30 +479,37 @@ function loop(timestamp) {
 socket.on("command", function(command) {
     console.log("🎮 Received command:", command);
     
-    // Only process if it's a recognized command
-    if (["up", "down", "stop", "go"].includes(command)) {
-        // Display command feedback
-        commandFeedback.command = command;
-        commandFeedback.alpha = 1;
-        commandFeedback.timer = 40;
-        
-        // Handle the command
-        if (command === "up") {
-            player.vy = jump;
-            moving = true;
-            createParticles(player.x, player.y + player.height, 5, "#60a5fa");
-        } else if (command === "down") {
-            player.vy += fall;
-            moving = true;
-            createParticles(player.x, player.y - player.height/2, 5, "#f97316");
-        } else if (command === "stop") {
-            moving = false;
-        } else if (command === "go") {
-            if (gameOver) resetGame();
-            moving = true;
-            createParticles(player.x, player.y, 10, "#10b981");
-        }
+    // Add to command history for debugging
+    const now = new Date();
+    const timeStr = `${now.getMinutes()}:${now.getSeconds().toString().padStart(2, '0')}`;
+    commandHistory.unshift({time: timeStr, command: command});
+    if (commandHistory.length > 5) commandHistory.pop(); // Keep last 5 commands
+    
+    // Display command feedback for ALL commands
+    commandFeedback.command = command;
+    commandFeedback.alpha = 1;
+    commandFeedback.timer = 40;
+    
+    // Handle specific commands with actions
+    if (command === "up") {
+        player.vy = jump;
+        moving = true;
+        createParticles(player.x, player.y + player.height, 5, "#60a5fa");
+    } else if (command === "down") {
+        player.vy += fall;
+        moving = true;
+        createParticles(player.x, player.y - player.height/2, 5, "#f97316");
+    } else if (command === "stop") {
+        moving = false;
+    } else if (command === "go") {
+        if (gameOver) resetGame();
+        moving = true;
+        createParticles(player.x, player.y, 10, "#10b981");
+    } else if (command === "left" || command === "right") {
+        // Add handling for additional commands if needed
+        console.log("Additional command received:", command);
     }
+    // 'background' will be displayed but not acted upon
 });
 
 // Initialize audio recording
@@ -492,7 +541,7 @@ async function initAudio() {
             const reader = new FileReader();
             reader.onloadend = () => {
                 socket.emit("audio", reader.result);
-                setTimeout(startRecording, 500); // Reduced delay between recordings from 800ms to 500ms
+                setTimeout(startRecording, 500); // Reduced delay between recordings
             };
             reader.readAsDataURL(audioBlob);
         };
@@ -515,7 +564,7 @@ function startRecording() {
                 mediaRecorder.stop();
                 isRecording = false;
             }
-        }, 800); // Increased from 800ms to 1500ms (1.5 seconds)
+        }, 1500); // Increased to 1.5 seconds for better command capture
     }
 }
 
