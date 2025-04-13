@@ -165,10 +165,13 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install web app test dependencies
-pip install -r requirements-test.txt
+pip install -r requirements.txt
 
-# Run tests with coverage
-python -m pytest tests/ -v --cov=app --cov-report=term-missing
+# Run the tests with coverage
+coverage run --source=app -m pytest test_app.py -v
+
+# Generate a coverage report
+coverage report -m
 ```
 
 ### Training the Model
