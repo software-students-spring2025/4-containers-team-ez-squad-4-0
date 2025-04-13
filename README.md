@@ -157,7 +157,7 @@ coverage report
 
 
 ```bash
-cd ../web-app
+cd ../web-app/tests
 
 # Create and activate a virtual environment
 python -m venv venv
