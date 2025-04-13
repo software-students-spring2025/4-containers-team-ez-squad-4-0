@@ -20,10 +20,9 @@ A containerized application that uses voice commands to control a Flappy Bird st
 
 This project implements a voice-controlled Flappy Bird game using machine learning for voice command recognition. The system consists of three main containerized components:
 
-1. **Machine Learning Client**: Processes audio input to recognize voice commands using a CNN model trained on log-mel spectrogram features.
-2. **Web App**: Provides a browser-based interface for playing the game and viewing analytics.
+1. **Machine Learning Client**: Processes audio input to recognize voice commands using a CNN model trained on log-mel spectrogram features. Handles all analysis and prediction logic.
+2. **Web App**:Provides a browser-based interface for playing the game and viewing analytics, focusing solely on frontend display.
 3. **MongoDB Database**: Stores game scores and voice command history.
-
 Players can control the game by speaking commands like "up", "down", "stop", and "go". The machine learning model analyzes the audio input in real-time to detect these commands and control the game accordingly.
 
 ## Architecture
@@ -31,7 +30,7 @@ Players can control the game by speaking commands like "up", "down", "stop", and
 The system architecture consists of:
 
 - **MongoDB Container**  
-  Acts as the central database for storing voice command predictions and game scores.  
+  Acts as the central database for storing voice command predictions and game scores.
   - **Database**: `voice_flappy_game`  
   - **Collections**:
     - `commands`
@@ -45,25 +44,27 @@ The system architecture consists of:
       - `timestamp`: Time the score was recorded
 
 - **Machine Learning Client Container**  
-  Processes recorded audio input and predicts the associated command using a CNN model.  
+  Processes recorded audio input and predicts the associated command using a CNN model.
+  - Serves as the backend for all analysis operations.
+  - Provides an API endpoint for the web app to request voice command predictions.
   - Loads and uses `cnn_model.h5` and `cnn_label_encoder.pkl`
   - Extracts MFCC features using `librosa`  
   - Supports batch prediction via CLI:
     - `--process-file <path>`: Predict one audio file
     - `--process-dir <dir>`: Predict all `.wav` files in a folder
+    - --api: Start the prediction API server
   - Saves prediction results to MongoDB under `commands`
 
 - **Web App Container**  
-  A Flask + Flask-SocketIO application that hosts the game interface and live prediction dashboard.  
+  A Flask application that hosts the game interface and live prediction dashboard.
   - Accepts base64 audio over Socket.IO, decodes and converts it to `.wav`
-  - Uses the same ML model to predict voice commands in real-time
-  - Emits predictions back to the front end immediately
-  - Stores commands and scores to MongoDB
+  - Focuses exclusively on frontend display of the game and visualization.
+  - Connects to the Machine Learning Client API to receive voice command predictions.
+  - Displays the game and responds to predicted commands.
   - Routes:
     - `/`: Main game page
     - `/scores`: View recent scores
     - `/score`: POST endpoint for saving score
-    - `/api/commands`: Return recent command predictions in JSON
     - `/dashboard`: Web dashboard for visualization
 
 
