@@ -299,130 +299,133 @@ if __name__ == "__main__":
 # import os
 # import sys
 # import random
-# import math
-# import datetime
+# import logging
+# from collections import Counter
 
-# def fake_function_1():
-#     # print("Hello from fake_function_1")
+# def dummy_function():
+#     # print("Hello from dummy_function")
 #     pass
 
-# def fake_function_2(x, y):
-#     # result = x + y
-#     # return result * 2
+# def add_numbers(a, b):
+#     # result = a + b
+#     # return result
 #     pass
 
-# class DummyClass:
-#     # def __init__(self, value):
-#     #     self.value = value
+# def multiply(x, y=2):
+#     # return x * y
 #     pass
 
-#     # def display(self):
-#     #     print(f"Value: {self.value}")
+# class FakeClass:
+#     # def __init__(self, name):
+#     #     self.name = name
+#     pass
+
+#     # def greet(self):
+#     #     print(f"Hello, {self.name}")
 #     #     return True
 
-# for i in range(5):
-#     # print(f"Looping: {i}")
-#     # if i % 2 == 0:
-#     #     print("Even")
-#     # else:
-#     #     print("Odd")
-#     pass
-
-# try:
-#     # risky = 10 / 0
-#     pass
-# except ZeroDivisionError:
-#     # print("Divide by zero error!")
-#     pass
-
-# items = [1, 2, 3, 4, 5]
-# # squared = [x**2 for x in items]
+# # numbers = [1, 2, 3, 4, 5]
+# # squared = [n**2 for n in numbers]
 # # print(squared)
 
-# # lambda_func = lambda x: x * 3
-# # print(lambda_func(7))
+# # even = list(filter(lambda x: x % 2 == 0, numbers))
+# # print(even)
 
-# def nested_example():
-#     # def inner():
-#     #     print("Inner function")
-#     # inner()
+# # logger = logging.getLogger(__name__)
+# # logger.setLevel(logging.DEBUG)
+
+# for i in range(5):
+#     # print(f"Item: {i}")
 #     pass
 
-# # print("Testing complete")
-
-# # config = {
-# #     "host": "localhost",
-# #     "port": 8080
-# # }
-
-# # if "port" in config:
-# #     print("Port is set.")
-
-# for char in "hello":
-#     # print(char.upper())
-#     pass
+# # names = ["Alice", "Bob", "Charlie"]
+# # for name in names:
+# #     print(name.upper())
 
 # count = 0
 # while count < 3:
-#     # print(f"Count: {count}")
+#     # print(f"Count is {count}")
 #     count += 1
 
-# # with open("dummy.txt", "w") as file:
-# #     file.write("Just testing...")
-
-# def fake_math(a, b=10):
-#     # return (a + b) ** 2
+# try:
+#     # risky = 1 / 0
+#     pass
+# except ZeroDivisionError as e:
+#     # print("Caught division by zero")
 #     pass
 
-# # print(fake_math(3))
+# # my_dict = {"a": 1, "b": 2}
+# # print(my_dict.get("a"))
 
-# # numbers = list(range(10))
-# # filtered = filter(lambda x: x % 2 == 0, numbers)
+# # result = sum(numbers)
+# # print(result)
 
-# # for num in filtered:
-# #     print(num)
-
-# from collections import defaultdict
-# # dd = defaultdict(int)
-# # dd["a"] += 1
-# # dd["b"] += 2
-
-# def recursive_depth(n):
-#     # if n <= 0:
-#     #     return 0
-#     # return n + recursive_depth(n - 1)
+# def fake_logic(val):
+#     # if val > 0:
+#     #     print("Positive")
+#     # else:
+#     #     print("Non-positive")
 #     pass
 
-# # print(recursive_depth(3))
+# # if "Bob" in names:
+# #     print("Bob is here")
 
-# def unused():
-#     # pass
-#     pass
+# # matrix = [[1, 2], [3, 4]]
+# # transposed = list(zip(*matrix))
+# # print(transposed)
 
-# # print("End of script")
-
-# # flag = True
-# # if flag:
-# #     print("Flag is true")
-# # else:
-# #     print("Flag is false")
-
-# # total = sum([1, 2, 3])
-# # print(total)
-
-# # names = ["Jess", "Raabya", "Kai"]
-# # for name in names:
-# #     print(name.lower())
-
-# # del names[0]
-
-# # print("Goodbye")
+# # with open("temp.txt", "w") as f:
+# #     f.write("Temporary file")
 
 # # now = datetime.datetime.now()
-# # print(now.isoformat())
+# # print(now.strftime("%Y-%m-%d"))
 
-# # class Empty:
-# #     pass
+# def recursive(n):
+#     # if n == 0:
+#     #     return 1
+#     # return n * recursive(n - 1)
+#     pass
 
-# # x = Empty()
-# # print(isinstance(x, Empty))
+# # path = os.path.join("folder", "file.txt")
+# # print(path)
+
+# # data = [{"x": 1}, {"x": 2}, {"x": 3}]
+# # x_vals = [d["x"] for d in data]
+
+# # for x in x_vals:
+# #     print(x)
+
+# # status = "success" if True else "failure"
+# # print(status)
+
+# # total = 0
+# # for val in numbers:
+# #     total += val
+# # print(total)
+
+# # coords = (10, 20)
+# # x, y = coords
+# # print(x, y)
+
+# # my_list = list(range(10))
+# # reversed_list = list(reversed(my_list))
+
+# def default_param_example(msg="hello"):
+#     # print(msg)
+#     pass
+
+# # long_string = (
+# #     "This is a very long string that will need to be split "
+# #     "across multiple lines to fit the 88 character line limit."
+# # )
+
+# # color_codes = {"red": "#FF0000", "green": "#00FF00", "blue": "#0000FF"}
+# # print(color_codes["green"])
+
+# # sample = [random.randint(0, 100) for _ in range(5)]
+# # print(sample)
+
+# # def unused_function():
+# #     return None
+
+# # print("Done!")
