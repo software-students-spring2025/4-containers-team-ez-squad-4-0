@@ -1,17 +1,18 @@
 name: Web App CI
-
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - '**'  # This will match any branch
     paths:
       - 'web-app/**'
       - '.github/workflows/web-app-ci.yml'
   pull_request:
-    branches: [ main ]
+    branches: 
+      - main
     paths:
       - 'web-app/**'
       - '.github/workflows/web-app-ci.yml'
-
 jobs:
   test-web-app:
     runs-on: ubuntu-latest
@@ -22,49 +23,26 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         cd web-app
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
-        pip install pytest pytest-flask pytest-cov
+        pip install pytest pytest-flask pytest-cov pydub
+
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
     
-    - name: Prepare test environment
+    - name: Run tests with coverage
       run: |
         cd web-app
-        
-        # Move conftest.py out of the way for CI testing
-        if [ -f conftest.py ]; then
-          mv conftest.py conftest.py.bak
-          echo "Moved conftest.py to conftest.py.bak for CI testing"
-        fi
-        
-        # Create a minimal test file that will pass
-        cat > test_simple.py << 'EOF'
-        """Simple tests that will pass in CI environment."""
-        
-        def test_app_exists():
-            """Verify that app.py exists."""
-            import os
-            assert os.path.exists('app.py')
-            
-        def test_dummy_coverage():
-            """Dummy test for coverage."""
-            def sample_function():
-                """Sample function for coverage."""
-                return "Web app is working"
-                
-            assert sample_function() == "Web app is working"
-        EOF
-    
-    - name: Test with pytest
-      run: |
-        cd web-app
-        # Run the simple test file
-        pytest test_simple.py -v --cov=. --cov-report=xml
+        coverage run --source=app -m pytest test_app.py -v
+        coverage xml
+        coverage report -m
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
