@@ -3,7 +3,7 @@
 Voice Command Game Web App
 
 A Flask web application that provides a web interface for a voice-controlled
-Flappy Bird-style game and connects to a MongoDB database for score storage.
+Flappy Bird-style game and connects to a MongoDB database for score storage.--
 """
 
 # Standard library imports
