@@ -5,7 +5,7 @@ Voice Command Recognition Machine Learning Client
 This module implements a client that processes voice commands,
 performs machine learning predictions, and interacts with MongoDB.
 Recording is no longer done locally—audio files should be passed in,
-for example, by a web front end. ------
+for example, by a web front end. --------
 """
 
 # Standard library imports
