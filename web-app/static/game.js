@@ -32,6 +32,7 @@ let commandFeedback = { command: "", alpha: 0, timer: 0 };
 let particles = [];
 let bgParticles = [];
 
+
 // Game settings
 const pipeGap = 180;  
 const pipeWidth = 50;
@@ -42,6 +43,11 @@ let bgGradient;
 
 // Connect to socket.io
 const socket = io();
+let lastCommandTime = 0;
+const commandCooldown = 300; // milliseconds between commands to prevent duplicates
+let commandBuffer = []; // buffer for recent commands to improve reliability
+const bufferSize = 3; // number of commands to keep in buffer
+const commandDebounceTime = 800; // milliseconds to wait before executing another of the same command
 
 // Game colors
 const colors = {
@@ -437,16 +443,44 @@ function loop(timestamp) {
 socket.on("command", function(command) {
     console.log("🎮 Received command:", command);
     
+    const now = Date.now();
+    
+    // Ignore rapid repeats of the same command
+    if (now - lastCommandTime < commandCooldown) {
+        console.log("Command ignored due to cooldown");
+        return;
+    }
+    
     // Only process if it's a recognized command
     if (["up", "down", "stop", "go"].includes(command)) {
+        // Add command to buffer
+        commandBuffer.push({ command, time: now });
+        if (commandBuffer.length > bufferSize) {
+            commandBuffer.shift(); // remove oldest command
+        }
+        
+        // Check for consistent commands in buffer
+        const recentCommands = {};
+        commandBuffer.forEach(c => {
+            if (!recentCommands[c.command]) recentCommands[c.command] = 0;
+            // Only count commands within the last second
+            if (now - c.time < 1000) recentCommands[c.command]++;
+        });
+        
         // Display command feedback
         commandFeedback.command = command;
         commandFeedback.alpha = 1;
         commandFeedback.timer = 40;
         
-        // Handle the command
+        // Update last command time
+        lastCommandTime = now;
+        
+        // Handle the command with improved logic
         if (command === "up") {
-            player.vy = jump;
+            // Only apply a new jump if we're not already moving up rapidly
+            if (player.vy > -0.2) {
+                player.vy = jump;
+            }
             moving = true;
             createParticles(player.x, player.y + player.height, 5, "#60a5fa");
         } else if (command === "down") {
