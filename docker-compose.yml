@@ -14,10 +14,6 @@ services:
     restart: unless-stopped
     environment:
       - TZ=UTC
-    # Uncomment for production with authentication
-    # environment:
-    #   - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-    #   - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
 
   # Machine Learning Client
   ml-client:
@@ -25,6 +21,8 @@ services:
       context: ./machine-learning-client
       dockerfile: Dockerfile
     container_name: flappy-ml-client
+    ports:
+      - "5002:5002"  # Expose API port
     volumes:
       - ./machine-learning-client:/app
       - ./dataset:/app/dataset
@@ -35,11 +33,13 @@ services:
       - MONGO_DB=voice_flappy_game
       - MODEL_PATH=/app/cnn_model.h5
       - ENCODER_PATH=/app/cnn_label_encoder.pkl
+      - API_PORT=5002
       - PYTHONUNBUFFERED=1
       - TZ=UTC
     networks:
       - flappy-network
     restart: unless-stopped
+    command: python Client.py --api
 
   # Web App
   web-app:
@@ -51,14 +51,13 @@ services:
       - "5001:5001"
     volumes:
       - ./web-app:/app
-      - ./machine-learning-client/cnn_model.h5:/app/cnn_model.h5
-      - ./machine-learning-client/cnn_label_encoder.pkl:/app/cnn_label_encoder.pkl
     depends_on:
       - mongo
       - ml-client
     environment:
       - MONGO_URI=mongodb://mongo:27017/
       - MONGO_DB=voice_flappy_game
+      - ML_CLIENT_API_URL=http://flappy-ml-client:5002/api/predict
       - FLASK_ENV=development
       - SECRET_KEY=dev_secret_key
       - PYTHONUNBUFFERED=1
