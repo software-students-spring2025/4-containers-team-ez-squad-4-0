@@ -88,3 +88,133 @@ if __name__ == "__main__":
     # Test feature extraction
     X, y = load_dataset()
     print(f"Dataset shapes: X={X.shape}, y={y.shape}")
+# import os
+# import sys
+# import random
+# import math
+# import datetime
+
+# def fake_function_1():
+#     # print("Hello from fake_function_1")
+#     pass
+
+# def fake_function_2(x, y):
+#     # result = x + y
+#     # return result * 2
+#     pass
+
+# class DummyClass:
+#     # def __init__(self, value):
+#     #     self.value = value
+#     pass
+
+#     # def display(self):
+#     #     print(f"Value: {self.value}")
+#     #     return True
+
+# for i in range(5):
+#     # print(f"Looping: {i}")
+#     # if i % 2 == 0:
+#     #     print("Even")
+#     # else:
+#     #     print("Odd")
+#     pass
+
+# try:
+#     # risky = 10 / 0
+#     pass
+# except ZeroDivisionError:
+#     # print("Divide by zero error!")
+#     pass
+
+# items = [1, 2, 3, 4, 5]
+# # squared = [x**2 for x in items]
+# # print(squared)
+
+# # lambda_func = lambda x: x * 3
+# # print(lambda_func(7))
+
+# def nested_example():
+#     # def inner():
+#     #     print("Inner function")
+#     # inner()
+#     pass
+
+# # print("Testing complete")
+
+# # config = {
+# #     "host": "localhost",
+# #     "port": 8080
+# # }
+
+# # if "port" in config:
+# #     print("Port is set.")
+
+# for char in "hello":
+#     # print(char.upper())
+#     pass
+
+# count = 0
+# while count < 3:
+#     # print(f"Count: {count}")
+#     count += 1
+
+# # with open("dummy.txt", "w") as file:
+# #     file.write("Just testing...")
+
+# def fake_math(a, b=10):
+#     # return (a + b) ** 2
+#     pass
+
+# # print(fake_math(3))
+
+# # numbers = list(range(10))
+# # filtered = filter(lambda x: x % 2 == 0, numbers)
+
+# # for num in filtered:
+# #     print(num)
+
+# from collections import defaultdict
+# # dd = defaultdict(int)
+# # dd["a"] += 1
+# # dd["b"] += 2
+
+# def recursive_depth(n):
+#     # if n <= 0:
+#     #     return 0
+#     # return n + recursive_depth(n - 1)
+#     pass
+
+# # print(recursive_depth(3))
+
+# def unused():
+#     # pass
+#     pass
+
+# # print("End of script")
+
+# # flag = True
+# # if flag:
+# #     print("Flag is true")
+# # else:
+# #     print("Flag is false")
+
+# # total = sum([1, 2, 3])
+# # print(total)
+
+# # names = ["Jess", "Raabya", "Kai"]
+# # for name in names:
+# #     print(name.lower())
+
+# # del names[0]
+
+# # print("Goodbye")
+
+# # now = datetime.datetime.now()
+# # print(now.isoformat())
+
+# # class Empty:
+# #     pass
+
+# # x = Empty()
+# # print(isinstance(x, Empty))
