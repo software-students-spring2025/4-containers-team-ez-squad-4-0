@@ -1,8 +1,9 @@
 name: ML Client CI
-
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - '**'  # This will run on all branches
     paths:
       - 'machine-learning-client/**'
       - '.github/workflows/ml-client-ci.yml'
@@ -11,7 +12,6 @@ on:
     paths:
       - 'machine-learning-client/**'
       - '.github/workflows/ml-client-ci.yml'
-
 jobs:
   test-ml-client:
     runs-on: ubuntu-latest
@@ -35,6 +35,11 @@ jobs:
       run: |
         cd machine-learning-client
         pytest test_client.py --cov=. --cov-report=xml
+        
+    - name: Display coverage report
+      run: |
+        cd machine-learning-client
+        coverage report -m
     
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
