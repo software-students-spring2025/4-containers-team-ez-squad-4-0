@@ -91,10 +91,10 @@ else:
 def predict_command(wav_path):
     """
     Send audio to ML client for prediction.
-    
+
     Args:
         wav_path: Path to WAV audio file
-        
+
     Returns:
         command: Predicted command string
     """
@@ -102,36 +102,42 @@ def predict_command(wav_path):
         # Add retries for API calls
         max_retries = 3
         retry_delay = 0.5  # seconds
-        
+
         for attempt in range(max_retries):
             try:
-                with open(wav_path, 'rb') as audio_file:
-                    files = {'audio': (os.path.basename(wav_path), audio_file, 'audio/wav')}
-                    
+                with open(wav_path, "rb") as audio_file:
+                    files = {
+                        "audio": (os.path.basename(wav_path), audio_file, "audio/wav")
+                    }
+
                     # Make request to the ML client API with proper timeout
                     response = requests.post(
-                        ML_CLIENT_API_URL, 
-                        files=files, 
+                        ML_CLIENT_API_URL,
+                        files=files,
                         timeout=3,  # Reduced timeout to prevent UI lag
-                        headers={'Accept': 'application/json'}
+                        headers={"Accept": "application/json"},
                     )
-                
+
                 if response.status_code == 200:
                     prediction_data = response.json()
-                    command = prediction_data['command']
-                    confidence = prediction_data.get('confidence', 0)
-                    
+                    command = prediction_data["command"]
+                    confidence = prediction_data.get("confidence", 0)
+
                     # Log the result
-                    logger.info(f"Command from ML client: {command}, Confidence: {confidence:.4f}")
-                    
+                    logger.info(
+                        f"Command from ML client: {command}, Confidence: {confidence:.4f}"
+                    )
+
                     # Don't forward background noise commands to the game
                     if command == "background":
                         logger.info("Ignoring background noise")
                         return None  # Return None instead of "background"
-                        
+
                     return command
                 else:
-                    logger.error(f"ML client error (attempt {attempt+1}): Status {response.status_code}, Response: {response.text}")
+                    logger.error(
+                        f"ML client error (attempt {attempt+1}): Status {response.status_code}, Response: {response.text}"
+                    )
                     if attempt < max_retries - 1:
                         logger.info(f"Retrying in {retry_delay} seconds...")
                         time.sleep(retry_delay)
@@ -247,12 +253,12 @@ def handle_audio(data_url):
 
         # Get prediction from ML client
         command = predict_command(wav_path)
-        
+
         # Only emit command if it's not None (i.e., not background noise)
         if command is not None:
             logger.info(f"Emitting command: {command}")
             emit("command", command)
-            
+
             # Save command to database if connected
             if commands_collection is not None:
                 commands_collection.insert_one(
