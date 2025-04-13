@@ -86,12 +86,8 @@ The system architecture consists of:
    ```
 
 2. Environment Setup:
-   Create a `.env` file in the root directory with the following variables:
-   ```
-   MONGO_INITDB_ROOT_USERNAME=admin
-   MONGO_INITDB_ROOT_PASSWORD=password
-   SECRET_KEY=your_secret_key
-   ```
+   - All necessary environment variables are already configured in `docker-compose.yml`, so no separate `.env` file is needed to run this project.
+
 
 3. Build and start the containers:
    ```
