@@ -23,74 +23,82 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Install docker-compose plugin
+        run: |
+          mkdir -p ~/.docker/cli-plugins/
+          curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 \
+               -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Install docker-compose plugin
-      run: |
-        mkdir -p ~/.docker/cli-plugins/
-        curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-        chmod +x ~/.docker/cli-plugins/docker-compose
-
-    - name: Build and start services
-      run: |
-        docker-compose build
-        docker-compose up -d
-
-    - name: Check running containers
-      run: |
-        sleep 30
-        docker-compose ps
-        if [ "$(docker-compose ps -q | wc -l)" -ne "$(docker-compose config --services | wc -l)" ]; then
-          echo "Not all containers are running!"
-          docker-compose logs
-          exit 1
-        fi
-        echo "All containers running successfully."
-
-    - name: Test ML Client container
-      run: |
-        if [ "$(docker inspect -f '{{.State.Running}}' flappy-ml-client)" != "true" ]; then
-          echo "ML Client container is not running properly!"
-          docker logs flappy-ml-client
-          exit 1
-        fi
-        echo "ML Client container is healthy."
-
-    - name: Test Web App container
-      run: |
-        curl -s --retry 5 --retry-delay 5 http://localhost:5001 > /dev/null
-        if [ $? -ne 0 ]; then
-          echo "Web app is not responding!"
-          docker logs flappy-web
-          exit 1
-        fi
-        echo "Web App container is healthy."
-
-    - name: Check MongoDB container
-      run: |
-        if [ "$(docker inspect -f '{{.State.Running}}' flappy-mongo)" != "true" ]; then
-          echo "MongoDB container is not running properly!"
-          docker logs flappy-mongo
-          exit 1
-        fi
-        echo "MongoDB container is healthy."
-
-    - name: Test ML API connection
-      run: |
-        dd if=/dev/urandom of=test.wav bs=1k count=16
-        RESULT=$(curl -s -F "audio=@test.wav" http://localhost:5002/api/predict)
-        if [ $? -ne 0 ]; then
-          echo "ML API is not responding!"
-          exit 1
-        fi
-        echo "ML API response: $RESULT"
-        echo "ML API connection test passed."
-
-    - name: Clean up
-      run: |
-        docker-compose down
-        docker-compose rm -f
+      - name: Build and start services
+        run: |
+          docker-compose build
+          docker-compose up -d
+        
+      - name: Check running containers
+        run: |
+          # Give containers time to fully start
+          sleep 30
+          docker-compose ps
+          # Check if all containers are running properly
+          if [ "$(docker-compose ps -q | wc -l)" -ne "$(docker-compose config --services | wc -l)" ]; then
+            echo "Not all containers are running!"
+            docker-compose logs
+            exit 1
+          fi
+          echo "All containers running successfully."
+      
+      - name: Test ML Client container
+        run: |
+          # Check if ML client container is healthy
+          if [ "$(docker inspect -f '{{.State.Running}}' flappy-ml-client)" != "true" ]; then
+            echo "ML Client container is not running properly!"
+            docker logs flappy-ml-client
+            exit 1
+          fi
+          echo "ML Client container is healthy."
+      
+      - name: Test Web App container
+        run: |
+          # Check if web app is responding
+          curl -s --retry 5 --retry-delay 5 http://localhost:5001 > /dev/null
+          if [ $? -ne 0 ]; then
+            echo "Web app is not responding!"
+            docker logs flappy-web
+            exit 1
+          fi
+          echo "Web App container is healthy."
+      
+      - name: Check MongoDB container
+        run: |
+          # Check if MongoDB container is healthy
+          if [ "$(docker inspect -f '{{.State.Running}}' flappy-mongo)" != "true" ]; then
+            echo "MongoDB container is not running properly!"
+            docker logs flappy-mongo
+            exit 1
+          fi
+          echo "MongoDB container is healthy."
+      
+      - name: Test ML API connection
+        run: |
+          # Create a test audio file
+          dd if=/dev/urandom of=test.wav bs=1k count=16
+          # Test ML API endpoint
+          RESULT=$(curl -s -F "audio=@test.wav" http://localhost:5002/api/predict)
+          if [ $? -ne 0 ]; then
+            echo "ML API is not responding!"
+            exit 1
+          fi
+          echo "ML API response: $RESULT"
+          echo "ML API connection test passed."
+      
+      - name: Clean up
+        run: |
+          docker-compose down
+          docker-compose rm -f
