@@ -8,14 +8,14 @@ on:
       - 'web-app/**'
       - 'machine-learning-client/**'
       - 'docker-compose.yml'
-      - '.github/workflows/docker-build.yml'
+      - '.github/workflows/docker-build-test.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'web-app/**'
       - 'machine-learning-client/**'
       - 'docker-compose.yml'
-      - '.github/workflows/docker-build.yml'
+      - '.github/workflows/docker-build-test.yml'
 
 jobs:
   docker-build-test:
@@ -34,13 +34,11 @@ jobs:
           docker version
           docker info
 
-      - name: Install docker-compose plugin
+      - name: Install docker-compose
         run: |
-          mkdir -p ~/.docker/cli-plugins/
-          curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 \
-            -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-          docker-compose version
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Check docker-compose file
         run: |
