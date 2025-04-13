@@ -21,7 +21,7 @@ A containerized application that uses voice commands to control a Flappy Bird st
 This project implements a voice-controlled Flappy Bird game using machine learning for voice command recognition. The system consists of three main containerized components:
 
 1. **Machine Learning Client**: Processes audio input to recognize voice commands using a CNN model trained on log-mel spectrogram features. Handles all analysis and prediction logic.
-2. **Web App**:Provides a browser-based interface for playing the game and viewing analytics, focusing solely on frontend display.
+2. **Web App**: Provides a browser-based interface for playing the game and viewing analytics, focusing solely on frontend display.
 3. **MongoDB Database**: Stores game scores and voice command history.
 Players can control the game by speaking commands like "up", "down", "stop", and "go". The machine learning model analyzes the audio input in real-time to detect these commands and control the game accordingly.
 
